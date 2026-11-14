@@ -2,7 +2,9 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import { promises as fs, constants as fsConstants } from 'node:fs';
+import { promises as fs, constants as fsConstants, createWriteStream } from 'node:fs';
+import { Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { execFile } from 'node:child_process';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -10,7 +12,8 @@ const ROOT = path.resolve(HERE, '..');
 const STATIC = path.join(HERE, 'public');
 const MAX_FILE_BYTES = 12 * 1024 * 1024;
 const MAX_BODY_BYTES = 17 * 1024 * 1024;
-const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnostico', 'erro-analise', 'erro-funcao']);
+const MAX_APK_BYTES = 160 * 1024 * 1024;
+const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnostico', 'erro-analise', 'erro-funcao', 'android-pacote', 'android-classes', 'erro-android-diagnostico', 'erro-android-pacote', 'erro-android-classes']);
 const MIME = { '/': 'text/html; charset=utf-8', '/styles.css': 'text/css; charset=utf-8', '/app.js': 'text/javascript; charset=utf-8' };
 const STATIC_PATH = { '/': 'index.html', '/styles.css': 'styles.css', '/app.js': 'app.js' };
 
@@ -72,9 +75,10 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
   const uploadsDir = path.join(root, 'targets', 'painel');
   const reportsDir = path.join(root, 'results', 'painel');
   const hopperPath = process.env.HOPPER_LAUNCHER_PATH || '/opt/hopper/bin/Hopper';
+  const jadxPath = process.env.REA_JADX_MCP_JAR || path.join(process.env.HOME || '/home/vscode', '.local/share/rea/android/jadx-headless-mcp-0.7.1-all.jar');
   const jobs = new Map();
   let running = false;
-  const env = { ...process.env, HOPPER_LAUNCHER_PATH: hopperPath };
+  const env = { ...process.env, HOPPER_LAUNCHER_PATH: hopperPath, REA_JADX_MCP_JAR: jadxPath };
 
   async function persist(job) {
     const dir = path.join(reportsDir, job.id);
@@ -109,7 +113,12 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
       await persist(job);
       let target;
 
-      if (requestData.mode === 'demo') {
+      if (requestData.mode === 'android') {
+        target = requestData.targetPath;
+        if (!target.startsWith(uploadsDir + path.sep) || !target.toLowerCase().endsWith('.apk')) throw new Error('Arquivo APK inválido.');
+        const meta = await fs.stat(target);
+        if (!meta.isFile() || !meta.size || meta.size > MAX_APK_BYTES) throw new Error('APK inválido ou muito grande.');
+      } else if (requestData.mode === 'demo') {
         target = path.join(uploadsDir, 'demo-' + job.id);
         const src = path.join(root, 'exemplos', 'loja_demo.c');
         await call(job, 'gcc', ['-O0', '-g', '-fno-inline', '-o', target, src], null, 30000);
@@ -125,6 +134,26 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
         // Arquivos enviados pelo usuário NUNCA são executados.
       }
 
+      if (requestData.mode === 'android') {
+        job.step = 'Diagnosticando JADX';
+        await persist(job);
+        const diagnostic = await call(job, 'rea', ['doctor', '--provider', 'jadx', '--json'], 'android-diagnostico', 60000);
+        let doc;
+        try { doc = JSON.parse(diagnostic.stdout); } catch { throw new Error('Diagnóstico JADX não retornou JSON válido.'); }
+        const list = doc.checks || doc.scope_checks || [];
+        if (doc.healthy !== true && !list.some(x => x.name === 'jadx' && x.ok === true)) {
+          throw new Error('JADX ausente ou não configurado. Execute bash scripts/preparar-rea-android.sh no terminal do Codespace.');
+        }
+        job.step = 'Inspecionando APK com JADX';
+        await persist(job);
+        await call(job, 'rea', ['inspect-android-package', target, '--json'], 'android-pacote', 600000);
+        job.step = 'Buscando classes do aplicativo';
+        await persist(job);
+        try { await call(job, 'rea', ['search-android-classes', target, 'MainActivity', '--json'], 'android-classes', 180000); }
+        catch (error) { job.warning = cleanString(error.message, 600); }
+        job.step = 'Relatórios Android disponíveis';
+        job.status = 'concluido';
+      } else {
       job.step = 'Diagnosticando Hopper';
       await persist(job);
       const diagnostic = await call(job, 'rea', ['doctor', '--provider', 'hopper', '--json'], 'diagnostico', 60000);
@@ -154,6 +183,7 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
 
       job.step = 'Relatórios disponíveis';
       job.status = 'concluido';
+      }
     } catch (error) {
       job.status = 'erro';
       job.step = 'Falha durante a análise';
@@ -203,16 +233,52 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
       if (req.method === 'GET' && pathname === '/api/health') {
         let hopper = false;
         try { await fs.access(hopperPath, fsConstants.X_OK); hopper = true; } catch { /* Ignorar */ }
+        let jadx = false;
+        try { await fs.access(jadxPath, fsConstants.R_OK); jadx = true; } catch { /* provider ainda ausente */ }
         const check = await runner('rea', ['--version'], { cwd: root, env, timeout: 8000 });
         return json(res, 200, {
           rea: check.ok, version: check.stdout.trim().slice(0, 200),
-          hopper, hopperPath, running,
+          hopper, hopperPath, jadx, running,
           info: 'O painel usa o REA local. Não conecta nem autentica automaticamente agentes externos.'
         });
       }
       if (req.method === 'GET' && pathname === '/api/jobs') {
         const list = [...jobs.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 40);
         return json(res, 200, { jobs: list });
+      }
+      if (req.method === 'POST' && pathname === '/api/android-upload') {
+        if (running) return json(res, 409, { error: 'Já existe uma análise em andamento.' });
+        const filename = safeName(req.headers['x-rea-filename'] || 'aplicativo.apk');
+        if (!filename.toLowerCase().endsWith('.apk')) return json(res, 400, { error: 'Selecione um arquivo .apk. Arquivos .apks devem ser separados antes.' });
+        const givenSize = Number(req.headers['content-length'] || 0);
+        if (givenSize > MAX_APK_BYTES) return json(res, 413, { error: 'APK acima do limite de 160 MB.' });
+        running = true;
+        await fs.mkdir(uploadsDir, { recursive: true });
+        const targetPath = path.join(uploadsDir, randomUUID() + '-' + filename);
+        try {
+          let count = 0;
+          const guard = new Transform({
+            transform(chunk, encoding, callback) {
+              count += chunk.length;
+              if (count > MAX_APK_BYTES) callback(Object.assign(new Error('APK maior que 160 MB.'), { statusCode: 413 }));
+              else callback(null, chunk);
+            }
+          });
+          await pipeline(req, guard, createWriteStream(targetPath, { flags: 'wx', mode: 0o600 }));
+          if (!count) throw Object.assign(new Error('APK vazio.'), { statusCode: 400 });
+          const job = {
+            id: randomUUID(), filename, mode: 'android', symbol: '', status: 'iniciando',
+            step: 'Arquivo recebido, preparando análise', createdAt: new Date().toISOString(),
+            finishedAt: null, error: '', warning: '', reports: []
+          };
+          jobs.set(job.id, job);
+          void runJob(job, { mode: 'android', targetPath });
+          return json(res, 202, { id: job.id });
+        } catch (error) {
+          running = false;
+          await fs.rm(targetPath, { force: true }).catch(() => {});
+          throw error;
+        }
       }
       if (req.method === 'POST' && pathname === '/api/analyze') {
         if (running) return json(res, 409, { error: 'Já existe uma análise em andamento.' });
