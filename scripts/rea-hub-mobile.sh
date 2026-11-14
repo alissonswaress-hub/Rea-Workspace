@@ -35,6 +35,11 @@ stop_own_server() {
 }
 
 if [[ "${1:-}" == "--upgrade" ]]; then
+  # Fallback para o Codespace existente: nos proximos terminais, liga o REA automaticamente.
+  if ! grep -q 'REA_HUB_AUTO_START_MOBILE' "$HOME/.bashrc" 2>/dev/null; then
+    printf '\n# REA_HUB_AUTO_START_MOBILE\nif [ "${CODESPACES:-}" = "true" ] && [ -f "%s/scripts/rea-hub-mobile.sh" ]; then\n  bash "%s/scripts/rea-hub-mobile.sh" >/dev/null 2>&1 &\nfi\n' "$ROOT" "$ROOT" >> "$HOME/.bashrc"
+    echo "Atalho automatico instalado para os proximos terminais do Codespace."
+  fi
   stop_own_server
   for _ in 1 2 3 4 5; do
     if ! is_listening; then break; fi
