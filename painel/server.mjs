@@ -9,6 +9,7 @@ import { execFile } from 'node:child_process';
 import { unpackBaseApk } from './apk-bundle.mjs';
 import { lookupPlayStore, normalizePlayLink } from './playstore.mjs';
 import { generateProject, readProject, projectFile, packageProject, deleteGeneratedProject, deleteAllGeneratedProjects } from './generator.mjs';
+import { prepareMission, listMissions } from './copilot-bridge.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -115,6 +116,7 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
   const uploadsDir = path.join(root, 'targets', 'painel');
   const reportsDir = path.join(root, 'results', 'painel');
   const generatedDir = path.join(root, 'results', 'gerados');
+  const copilotMissionsDir = path.join(root, 'results', 'copilot-missions');
   const hopperPath = process.env.HOPPER_LAUNCHER_PATH || '/opt/hopper/bin/Hopper';
   const jadxPath = process.env.REA_JADX_MCP_JAR || path.join(process.env.HOME || '/home/vscode', '.local/share/rea/android/jadx-headless-mcp-0.7.1-all.jar');
   const jobs = new Map();
@@ -337,6 +339,34 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
         } catch(error) {
           return json(res,error.code==='ENOENT'?404:400,{error:cleanString(error.message,300)});
         }
+      }
+      if (req.method === 'GET' && pathname === '/api/copilot/missions') {
+        return json(res,200,{missions:await listMissions(copilotMissionsDir)});
+      }
+      if (req.method === 'POST' && pathname === '/api/copilot/prepare') {
+        const body=await readBody(req);
+        if(!body || !['public','analysis'].includes(body.mode)) {
+          return json(res,400,{error:'Escolha uma referência pública ou análise concluída do APK.'});
+        }
+        let reference={},reportPath=null;
+        if(body.mode==='analysis'){
+          const job=jobs.get(body.jobId);
+          if(!job || job.mode!=='android' || job.status!=='concluido' || !job.reports.includes('android-pacote')) {
+            return json(res,400,{error:'Selecione uma análise real de APK concluída.'});
+          }
+          reference={title:job.filename};
+          reportPath=path.join(reportsDir,job.id,'android-pacote.json');
+        } else {
+          const link=normalizePlayLink(body.storeUrl);
+          const meta=await storeLookup(link.url);
+          reference={title:meta.title||'',packageId:link.packageId,url:link.url};
+        }
+        const task=await prepareMission({
+          root,missionsDir:copilotMissionsDir,
+          name:body.name,requirements:body.requirements,
+          mode:body.mode,reference,reportPath
+        });
+        return json(res,201,{task});
       }
       if (req.method === 'GET' && pathname === '/api/projects') {
         await fs.mkdir(generatedDir,{recursive:true});
