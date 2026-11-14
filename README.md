@@ -18,6 +18,27 @@ Ambiente dedicado ao **REA (Reverse Engineer Anything)**, separado dos demais pr
 
 > **Importante:** salvar os arquivos neste repositório não instala o REA na sua conta do GitHub nem conecta automaticamente o REA a esta conversa. A instalação acontece no Codespace, e o registro MCP depende do agente escolhido.
 
+## Corrigir falha do Hopper no Codespaces (novembro de 2026)
+
+No Codespaces, pode ocorrer `authorization_or_package_manager_failed` com `exit ENOENT`, embora `sudo` e `apt-get` existam. O REA pode tentar uma ferramenta de autorização gráfica indisponível no contêiner. O erro **não comprova** que essa é a causa; confira o comando que falhou no relatório.
+
+Se `sudo -n true` funcionar, execute a instalação como administrador para permitir ao REA chamar diretamente o gerenciador de pacotes:
+
+```bash
+sudo -n env "PATH=$PATH" rea setup --yes --client cursor --install-hopper --json
+```
+
+O comando aprova a instalação oficial do Hopper e dependências do sistema. Rode **somente dentro de um Codespace de sua confiança** e revise o resultado. Ele pode registrar a configuração do Cursor sob o usuário root, pois será executado como administrador. A configuração do usuário normal continua separada e pode ser atualizada depois:
+
+```bash
+rea setup --yes --client cursor
+rea doctor --provider hopper --json
+```
+
+Se o Hopper continuar ausente, capture o objeto `hopper` do relatório do setup; a falha da instalação pode envolver pacote indisponível, rede ou dependências. Evite novas tentativas cegas.
+
+O Hopper tem licença própria; o modo demonstração possui limitações. O Codespaces pode ter custos de computação e armazenamento.
+
 ## Atualização e diagnóstico
 
 ```bash
