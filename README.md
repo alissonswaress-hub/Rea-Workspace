@@ -1,3 +1,20 @@
+## Limpeza de projetos experimentais e qualidade do construtor
+
+O gerador atual de "Criar meu app" foi identificado como **apenas um conjunto de modelos genéricos**. Não lê o código e as telas do aplicativo a ponto de reconstruir um produto similar. A interface agora informa claramente essa limitação; estes modelos não devem ser vendidos como clones.
+
+**Apagar os testes gerados sem mexer no laboratório:**
+
+1. No Codespace existente, atualize o painel:
+   \`git pull --ff-only && bash scripts/rea-hub-mobile.sh --upgrade\`
+2. No celular, abra o REA Hub, entre na seção **04 / CONSTRUIR → Protótipos de teste**.
+3. Em **Rascunhos de teste**, escolha **Apagar** num projeto ou **Apagar todos os testes**. Confirme a exclusão.
+
+Somente os diretórios de projetos gerados por este painel em \`results/gerados/<uuid>/\` são removidos. A exclusão **não afeta** REA, Hopper, JADX, os pacotes recebidos em \`targets/\`, relatórios de \`results/painel/\`, nem o código versionado em \`projetos/treinolab\`. Não é possível desfazer a exclusão.
+
+**Para chegar a um app similar de verdade:** é preciso o APK analisado, um mapa das telas e fluxos do aplicativo de referência, um PRD próprio, um agente de programação conectado/autorizado e testes. A análise estática isolada não entrega essas etapas. Não ative agentes com acesso irrestrito a arquivos privados e não copie código ou recursos protegidos sem autorização.
+
+---
+
 ## ✦ Nova função: criar um aplicativo depois da análise
 
 O REA Hub agora contém a etapa **04 / CONSTRUIR → Criar meu aplicativo**.
