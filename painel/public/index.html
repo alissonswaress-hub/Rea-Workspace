@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0b0b12">
-  <meta name="description" content="Central privada para análise de arquivos com REA e Hopper no GitHub Codespaces.">
+  <meta name="description" content="REA Hub privado: engenharia reversa e análise de APK diretamente do celular.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>REA Hub | Central de Análise</title>
   <link rel="stylesheet" href="/styles.css">
   <script src="/app.js" defer></script>
@@ -21,6 +25,7 @@
         <span class="pill" id="pill-rea"><span class="dot"></span> REA</span>
         <span class="pill" id="pill-hopper"><span class="dot"></span> Hopper</span>
         <span class="pill" id="pill-jadx"><span class="dot"></span> JADX</span>
+        <button type="button" class="icon-btn" id="btn-mobile-help" aria-label="Acesso fácil no celular" title="Adicionar REA Hub à tela inicial">⌂</button>
         <button type="button" class="icon-btn" id="btn-lock" aria-label="Bloquear painel" title="Bloquear painel">⏻</button>
       </div>
     </header>
@@ -35,6 +40,10 @@
         </div>
       </section>
 
+      <div class="mobile-quickstart" id="mobile-quickstart">
+        <div><strong>📱 Acesse com um toque da próxima vez</strong><p>Abra o REA Hub pelo Chrome e use <b>⋮ → Adicionar à tela inicial</b>. O ícone ficará junto dos seus aplicativos. Deixe a porta do Codespace <b>privada</b>.</p></div>
+        <button type="button" id="btn-install" class="btn-secondary">Ver como instalar</button>
+      </div>
       <div class="dashboard">
         <section class="panel start-panel" aria-labelledby="title-start">
           <div class="panel-top">
@@ -140,10 +149,11 @@
       <form id="login-form">
         <label class="field-label" for="access-token">Senha temporária</label>
         <input id="access-token" class="text-field" type="password" required spellcheck="false" autocomplete="off" placeholder="Cole a senha do terminal">
+        <label class="remember-phone"><input id="remember-phone" type="checkbox" checked> Lembrar acesso neste celular pessoal</label>
         <button class="btn-primary" type="submit">Entrar no REA Hub ↗</button>
         <p id="login-error" class="error-text" role="alert"></p>
       </form>
-      <small>Não compartilhe a senha nem torne a porta do Codespace pública.</small>
+      <small>Use apenas em aparelho de confiança. A porta do GitHub Codespaces deve continuar privada.</small>
     </div>
   </div>
 </body>
