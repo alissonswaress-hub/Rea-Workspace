@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { promises as fs } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createApp } from './server.mjs';
-import { generateProject, zipFiles, readProject, packageProject } from './generator.mjs';
+import { generateProject, zipFiles, readProject, packageProject, deleteGeneratedProject, deleteAllGeneratedProjects } from './generator.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 async function tempSource(t) {
@@ -154,4 +154,53 @@ test('REA Hub gera, serve prévia com sessão privada e baixa ZIP somente após 
   const logoff=await fetch(base+'/api/logout',{method:'POST',headers});
   assert.equal(logoff.status,200);
   assert.match(logoff.headers.get('set-cookie')||'',/Max-Age=0/);
+});
+
+
+test('Excluir rascunhos preserva APKs e relatorios e rejeita diretórios estranhos',async t=>{
+  const tmp=await tempSource(t),dir=path.join(tmp,'results','gerados');
+  const reports=path.join(tmp,'results','painel','analysis-test');
+  await fs.mkdir(reports,{recursive:true});
+  await fs.writeFile(path.join(reports,'android-pacote.json'),'{"test":"intacto"}');
+  const first=await generateProject({root:tmp,generatedDir:dir,name:'Rascunho A',kind:'tarefas',source:{kind:'public'}});
+  const second=await generateProject({root:tmp,generatedDir:dir,name:'Rascunho B',kind:'catalogo',source:{kind:'public'}});
+  const erased=await deleteGeneratedProject(dir,first.id);
+  assert.equal(erased.deleted,true);
+  await assert.rejects(readProject(dir,first.id),/ENOENT/);
+  assert.equal((await readProject(dir,second.id)).id,second.id);
+  await assert.rejects(deleteGeneratedProject(dir,'../../../../'),/inválido/);
+  const result=await deleteAllGeneratedProjects(dir);
+  assert.equal(result.deleted.length,1);
+  assert.equal(result.failed.length,0);
+  assert.equal((await fs.readFile(path.join(reports,'android-pacote.json'),'utf8')),'{"test":"intacto"}');
+  const untouched=path.join(tmp,'projetos','treinolab','index.html');
+  assert.match(await fs.readFile(untouched,'utf8'),/TREINO/);
+});
+
+test('API de exclusão de teste requer senha e confirmação explicita',async t=>{
+  const tmp=await tempSource(t);
+  const app=createApp({root:tmp,secret:'deletion-test',runner:async()=>({ok:true,stdout:'rea',stderr:''})});
+  await app.ready;
+  app.server.listen(0,'127.0.0.1');await once(app.server,'listening');
+  t.after(()=>new Promise(r=>app.server.close(r)));
+  const base='http://127.0.0.1:'+app.server.address().port;
+  const project=await generateProject({
+    root:tmp,generatedDir:path.join(tmp,'results','gerados'),
+    name:'Rascunho a excluir',kind:'tarefas',source:{kind:'public'}
+  });
+  const unauthorized=await fetch(base+'/api/projects/delete-tests',{
+    method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({confirmation:'APAGAR RASCUNHOS'})
+  });
+  assert.equal(unauthorized.status,401);
+  const headers={'x-rea-token':'deletion-test','content-type':'application/json'};
+  const unconfirmed=await fetch(base+'/api/projects/delete-tests',{method:'POST',headers,body:JSON.stringify({confirmation:'NAO'})});
+  assert.equal(unconfirmed.status,400);
+  assert.equal((await readProject(path.join(tmp,'results','gerados'),project.id)).id,project.id);
+  const response=await fetch(base+'/api/projects/'+project.id+'/delete',{
+    method:'POST',headers,body:JSON.stringify({confirmation:'APAGAR RASCUNHO'})
+  });
+  assert.equal(response.status,200);
+  assert.equal((await response.json()).deleted,true);
+  const result=await fetch(base+'/api/projects');
+  assert.equal(result.status,401);
 });
