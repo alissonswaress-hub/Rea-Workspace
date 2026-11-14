@@ -1,0 +1,29 @@
+name: Testar REA
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/test-rea.yml"
+
+jobs:
+  rea-smoke-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Configure Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install REA 6.9.0
+        run: npm install --global rea-agents@6.9.0
+      - name: Check command and version
+        run: |
+          node --version
+          npm --version
+          command -v rea
+          rea --help
+      - name: Run diagnostic (report only)
+        run: |
+          rea doctor --json > rea-doctor-result.json 2>&1 || true
+          cat rea-doctor-result.json
