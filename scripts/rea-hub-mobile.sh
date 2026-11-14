@@ -61,7 +61,15 @@ nohup node "$ROOT/painel/server.mjs" >> "$LOG" 2>&1 < /dev/null &
 started=$!
 for _ in 1 2 3 4 5 6 7; do
   if is_listening; then
-    echo "REA Hub ativo. Abra Codespaces > Portas > 3000 > Abrir no navegador."
+    echo "REA Hub ativo."
+    if [[ -n "${CODESPACE_NAME:-}" && -n "${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-}" ]]; then
+      echo "SEU LINK PARA FAVORITAR: https://${CODESPACE_NAME}-3000.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/"
+    else
+      echo "Abra Codespaces > Portas > 3000 > Abrir no navegador."
+    fi
+    if [[ "${1:-}" == "--upgrade" && -r "$HOME/.local/share/rea-hub/secret" ]]; then
+      echo "SENHA PRIVADA (guarde somente no seu aparelho): $(cat "$HOME/.local/share/rea-hub/secret")"
+    fi
     echo "Para consultar a senha privada no Codespace: cat ~/.local/share/rea-hub/secret"
     echo "Adicione esse endereco a tela inicial do celular e mantenha a porta PRIVATE."
     exit 0
