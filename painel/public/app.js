@@ -88,7 +88,7 @@ function setBuilderSource(mode, job = null) {
     }
     state.builderMode = 'analysis';
     state.builderJobId = candidate.id;
-    $('#builder-source').textContent = '✓ Análise real concluída: ' + candidate.filename + '. O gerador utilizará as informações observadas no APK.';
+    $('#builder-source').textContent = '✓ Análise real concluída: ' + candidate.filename + '. O protótipo atual usa apenas a categoria identificada, não reconstrói telas ou código do APK.';
     $('#btn-build-app').disabled = false;
     if (!$('#builder-name').value.trim() || $('#builder-name').value.trim() === 'Meu App') $('#builder-name').value = 'Meu Treino';
   } else if (mode === 'public' && state.storeInfo) {
@@ -101,7 +101,7 @@ function setBuilderSource(mode, job = null) {
       if (!$('#builder-name').value.trim() || $('#builder-name').value === 'Meu App') $('#builder-name').value = 'Meu Treino';
     }
   }
-  $('#builder-feedback').textContent = 'Pronto para criar um projeto original, editável e funcional.';
+  $('#builder-feedback').textContent = 'Modelo básico de teste. Para criar um app semelhante precisamos analisar telas, fluxos e funções com um agente de programação.';
 }
 function showGeneratedProject(project) {
   state.generatedProject = project;
@@ -110,7 +110,7 @@ function showGeneratedProject(project) {
   $('#generated-feature').textContent = project.features;
   $('#generated-preview').href = project.preview;
   $('#generated-frame').src = project.preview;
-  $('#builder-feedback').textContent = 'Projeto salvo neste Codespace. A prévia e o ZIP estão prontos.';
+  $('#builder-feedback').textContent = 'Protótipo genérico salvo. Prévia e ZIP disponíveis; não é reconstrução do app original.';
 }
 async function downloadGenerated(id) {
   try {
@@ -187,7 +187,7 @@ async function buildProject(event) {
   const button=$('#btn-build-app');
   if(!state.builderMode) return;
   button.disabled=true;
-  $('#builder-feedback').textContent='Criando arquivos do aplicativo...';
+  $('#builder-feedback').textContent='Gerando modelo básico de teste...';
   try {
     const data={
       mode:state.builderMode,name:$('#builder-name').value.trim(),
