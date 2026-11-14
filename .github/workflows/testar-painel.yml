@@ -8,6 +8,7 @@ on:
       - "package.json"
       - "scripts/preparar-rea-android.sh"
       - "scripts/analisar-android.sh"
+      - "scripts/rea-hub-mobile.sh"
       - ".github/workflows/testar-painel.yml"
 
 jobs:
@@ -24,8 +25,10 @@ jobs:
         run: |
           node --check painel/server.mjs
           node --check painel/public/app.js
+          node --check painel/public/sw.js
+          node --check painel/public/app.js
           node --check painel/server.test.mjs
       - name: Validar scripts Android
-        run: bash -n scripts/preparar-rea-android.sh scripts/analisar-android.sh
+        run: bash -n scripts/preparar-rea-android.sh scripts/analisar-android.sh scripts/rea-hub-mobile.sh
       - name: Testar autenticacao e fluxo de analise
         run: npm test
