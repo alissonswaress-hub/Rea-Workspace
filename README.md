@@ -16,6 +16,22 @@ Na aba **Portas**, clique na porta **4173** e selecione **Abrir no navegador**. 
 
 O TreinoLab funciona sem conta, com dados locais do navegador, e não deve ser usado como serviço de produção sem banco de dados, autenticação e revisão de segurança. Para documentação e funcionalidades, consulte [README TreinoLab](projetos/treinolab/README.md).
 
+## Analisar aplicativos Android APK de verdade
+
+O REA Hub agora pode receber APKs Android com até **160 MB** e executar análise estática usando **JADX (Java) no Codespaces**, sem executar o app.
+
+Para ativar esse recurso no **Codespace existente**, abra um novo terminal e execute:
+
+```bash
+git pull --ff-only && bash scripts/preparar-rea-android.sh
+```
+
+Depois reinicie o painel REA Hub na porta 3000 com `npm start`. Na interface, selecione **App Android**, envie um arquivo `.apk` obtido legitimamente e toque em **Iniciar análise**. O relatório indicará manifesto, permissões, classes e observações que o decompilador conseguir recuperar.
+
+**O APK do Befit ainda não está no nosso ambiente**. A página da Play Store não disponibiliza diretamente o binário. Para obter os arquivos do app instalado em seu próprio telefone via ADB, siga [Guia Android e Befit](docs/ANDROID-REA.md). Um app do Google Play pode usar APKs divididos; o `base.apk` por si só pode revelar apenas parte do código/recursos.
+
+Isso não é um clonador automático de aplicativos proprietários. O REA auxilia o estudo técnico; a implementação de produto com funcionalidades equivalentes usa **código e identidade próprios**.
+
 ## REA Hub: painel visual (celular e computador)
 
 Este repositório agora inclui uma central para analisar arquivos com **REA + Hopper** pelo navegador, sem editar comandos toda vez. O painel roda **dentro do seu GitHub Codespace**, não é um site público de produção. Ele não faz upload de binários para o GitHub e não executa arquivos que você enviar.
