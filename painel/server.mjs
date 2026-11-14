@@ -1,13 +1,14 @@
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { randomBytes, randomUUID, timingSafeEqual, createHmac } from 'node:crypto';
 import { promises as fs, constants as fsConstants, createWriteStream } from 'node:fs';
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { execFile } from 'node:child_process';
 import { unpackBaseApk } from './apk-bundle.mjs';
-import { lookupPlayStore } from './playstore.mjs';
+import { lookupPlayStore, normalizePlayLink } from './playstore.mjs';
+import { generateProject, readProject, projectFile, packageProject } from './generator.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -17,6 +18,7 @@ const MAX_BODY_BYTES = 17 * 1024 * 1024;
 const MAX_APK_BYTES = 160 * 1024 * 1024;
 const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnostico', 'erro-analise', 'erro-funcao', 'android-diagnostico', 'android-pacote', 'android-classes', 'android-arquivos', 'android-instalacao', 'erro-android-instalacao', 'erro-android-diagnostico', 'erro-android-pacote', 'erro-android-classes']);
 const MIME = { '/': 'text/html; charset=utf-8', '/styles.css': 'text/css; charset=utf-8', '/app.js': 'text/javascript; charset=utf-8', '/manifest.webmanifest': 'application/manifest+json; charset=utf-8', '/icon.svg': 'image/svg+xml', '/sw.js': 'text/javascript; charset=utf-8', '/offline.html': 'text/html; charset=utf-8' };
+const GENERATED_MIME = { 'index.html':'text/html; charset=utf-8', 'app.js':'text/javascript; charset=utf-8', 'styles.css':'text/css; charset=utf-8', 'config.json':'application/json; charset=utf-8', 'manifest.webmanifest':'application/manifest+json', 'icon.svg':'image/svg+xml', 'sw.js':'text/javascript; charset=utf-8' };
 const STATIC_PATH = { '/': 'index.html', '/styles.css': 'styles.css', '/app.js': 'app.js', '/manifest.webmanifest': 'manifest.webmanifest', '/icon.svg': 'icon.svg', '/sw.js': 'sw.js', '/offline.html': 'offline.html' };
 
 export async function getPersistentSecret(location = process.env.REA_HUB_SECRET_FILE || path.join(ROOT, '.rea-private', 'secret')) {
@@ -55,6 +57,21 @@ function json(res, code, data) {
   res.end(text);
 }
 
+function previewToken(secret) {
+  return createHmac('sha256', secret).update('rea-hub:generated-preview:v1').digest('hex');
+}
+function authorizePreview(req, secret) {
+  const value = (req.headers.cookie || '').split(';').map(x => x.trim())
+    .find(x => x.startsWith('rea-preview='));
+  const token = value?.slice('rea-preview='.length) || '';
+  const expected = previewToken(secret);
+  return token.length === expected.length &&
+    timingSafeEqual(Buffer.from(token), Buffer.from(expected));
+}
+function previewCookie(req, secret) {
+  const secure = req.socket.encrypted || String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+  return 'rea-preview=' + previewToken(secret) + '; HttpOnly; SameSite=Strict; Path=/generated/; Max-Age=604800' + (secure ? '; Secure' : '');
+}
 function authorized(req, secret) {
   const given = req.headers['x-rea-token'];
   if (typeof given !== 'string') return false;
@@ -97,6 +114,7 @@ function runProcess(command, args, { cwd = ROOT, env = process.env, timeout = 30
 export function createApp({ secret = randomBytes(20).toString('hex'), root = ROOT, runner = runProcess, storeLookup = lookupPlayStore } = {}) {
   const uploadsDir = path.join(root, 'targets', 'painel');
   const reportsDir = path.join(root, 'results', 'painel');
+  const generatedDir = path.join(root, 'results', 'gerados');
   const hopperPath = process.env.HOPPER_LAUNCHER_PATH || '/opt/hopper/bin/Hopper';
   const jadxPath = process.env.REA_JADX_MCP_JAR || path.join(process.env.HOME || '/home/vscode', '.local/share/rea/android/jadx-headless-mcp-0.7.1-all.jar');
   const jobs = new Map();
@@ -265,8 +283,27 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
         return;
       }
 
+      const generatedMatch = pathname.match(/^\/generated\/([a-f0-9-]{36})\/(index\.html|styles\.css|app\.js|manifest\.webmanifest|icon\.svg|sw\.js|config\.json)?$/);
+      if (req.method === 'GET' && generatedMatch) {
+        if (!authorizePreview(req, secret)) return json(res, 401, { error: 'Abra o REA Hub e faça login para visualizar seu app.' });
+        const filename = generatedMatch[2] || 'index.html';
+        try {
+          const { body } = await projectFile(generatedDir, generatedMatch[1], filename);
+          res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'none'; form-action 'self'");
+          res.writeHead(200, { 'Content-Type': GENERATED_MIME[filename], 'Cache-Control': 'no-store' });
+          res.end(body);
+          return;
+        } catch(error) {
+          return json(res, error.code === 'ENOENT' ? 404 : 400, { error: 'Projeto ou arquivo não encontrado.' });
+        }
+      }
       if (!pathname.startsWith('/api/')) return json(res, 404, { error: 'Página não encontrada.' });
       if (!authorized(req, secret)) return json(res, 401, { error: 'Chave de acesso incorreta.' });
+      res.setHeader('Set-Cookie', previewCookie(req, secret));
+      if (req.method === 'POST' && pathname === '/api/logout') {
+        res.setHeader('Set-Cookie', 'rea-preview=; Max-Age=0; Path=/generated/; HttpOnly; SameSite=Strict');
+        return json(res, 200, { ok: true });
+      }
 
       if (req.method === 'GET' && pathname === '/api/health') {
         let hopper = false;
@@ -279,6 +316,59 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
           hopper, hopperPath, jadx, running,
           info: 'O painel usa o REA local. Não conecta nem autentica automaticamente agentes externos.'
         });
+      }
+      if (req.method === 'GET' && pathname === '/api/projects') {
+        await fs.mkdir(generatedDir,{recursive:true});
+        const entries=await fs.readdir(generatedDir,{withFileTypes:true});
+        const projects=[];
+        for(const entry of entries.filter(x=>x.isDirectory()).slice(-80)){
+          try { projects.push(await readProject(generatedDir,entry.name)); } catch { /* Ignora arquivos parciais */ }
+        }
+        return json(res,200,{projects:projects.sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,30)});
+      }
+      if (req.method === 'POST' && pathname === '/api/generate') {
+        if (running) return json(res,409,{error:'Aguarde a análise em andamento terminar.'});
+        const body=await readBody(req);
+        if (!body || !['analysis','public'].includes(body.mode)) return json(res,400,{error:'Escolha uma análise concluída ou uma referência pública.'});
+        let source, reportPath=null;
+        if(body.mode==='analysis'){
+          const job=jobs.get(body.jobId);
+          if(!job || job.mode!=='android' || job.status!=='concluido' || !job.reports.includes('android-pacote'))
+            return json(res,400,{error:'Conclua uma análise real de APK antes de gerar o projeto.'});
+          reportPath=path.join(reportsDir,job.id,'android-pacote.json');
+          source={kind:'apk',title:job.filename,packageId:'',description:''};
+        } else {
+          const link=normalizePlayLink(body.storeUrl);
+          const info=await storeLookup(link.url);
+          source={kind:'public',title:info.title||'',packageId:link.packageId,description:info.description||''};
+        }
+        const created=await generateProject({
+          root,generatedDir,reportPath,source,
+          name:body.name,kind:body.kind||'auto',description:body.description||''
+        });
+        return json(res,201,{project:created});
+      }
+      const projectInfo = pathname.match(/^\/api\/projects\/([a-f0-9-]{36})$/);
+      if (req.method==='GET' && projectInfo) {
+        try { return json(res,200,{project:await readProject(generatedDir,projectInfo[1])}); }
+        catch { return json(res,404,{error:'Projeto não encontrado.'}); }
+      }
+      const projectZip = pathname.match(/^\/api\/projects\/([a-f0-9-]{36})\/zip$/);
+      if (req.method==='GET' && projectZip) {
+        try {
+          const { project, zip }=await packageProject(generatedDir,projectZip[1]);
+          const basename=safeName(project.name.toLowerCase().replaceAll(' ','-'));
+          res.writeHead(200, {
+            'Content-Type':'application/zip',
+            'Content-Length': zip.length,
+            'Content-Disposition':'attachment; filename="'+basename+'.zip"',
+            'Cache-Control':'no-store',
+          });
+          res.end(zip);
+          return;
+        } catch {
+          return json(res,404,{error:'Projeto não encontrado.'});
+        }
       }
       if (req.method === 'GET' && pathname === '/api/jobs') {
         const list = [...jobs.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 40);
