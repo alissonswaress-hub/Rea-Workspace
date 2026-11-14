@@ -1,6 +1,6 @@
 /* REA Hub - interface local. Nenhum serviço externo ou CDN. */
 const $ = (selector) => document.querySelector(selector);
-const state = { token: sessionStorage.getItem('rea-hub-key') || localStorage.getItem('rea-hub-key') || '', mode: 'store', jobs: [], job: null, storeInfo: null, builderMode: '', builderJobId: '', generatedProject: null, currentReport: '', reportText: '', timer: null };
+const state = { token: sessionStorage.getItem('rea-hub-key') || localStorage.getItem('rea-hub-key') || '', mode: 'store', jobs: [], job: null, storeInfo: null, builderMode: '', builderJobId: '', generatedProject: null, copilotTask: null, currentReport: '', reportText: '', timer: null };
 const labels = { diagnostico: 'Diagnóstico do Hopper', analise: 'Análise do programa', funcao: 'Detalhes da função', 'erro-analise': 'Log de erros da análise', 'erro-funcao': 'Log de erros da função', 'erro-diagnostico': 'Log do diagnóstico', 'android-diagnostico': 'Diagnóstico do JADX', 'android-pacote': 'Estrutura e manifesto do aplicativo', 'android-arquivos': 'Arquivos APK dentro do ZIP', 'android-instalacao': 'Preparação do Android', 'erro-android-instalacao': 'Erro na preparação do Android', 'android-classes': 'Classes de entrada (MainActivity)', 'erro-android-diagnostico': 'Erro no diagnóstico JADX', 'erro-android-pacote': 'Erro na inspeção do APK', 'erro-android-classes': 'Erro na busca de classes' };
 
 async function api(path, { method = 'GET', data = null, raw = false } = {}) {
@@ -203,6 +203,82 @@ async function buildProject(event) {
   finally {button.disabled=false;}
 }
 
+
+function copilotSourceNote() {
+  const mode=$('#copilot-source').value;
+  const job=state.job;
+  if(mode==='analysis'){
+    const allowed=job?.mode==='android' && job.status==='concluido' && job.reports?.includes('android-pacote');
+    $('#copilot-source-note').textContent=allowed
+      ? '✓ APK analisado: '+job.filename+'. A tarefa incluirá somente os metadados técnicos observados, nunca código proprietário ou segredos.'
+      : 'Selecione uma análise de APK realmente concluída na seção Acompanhamento. O link da Play Store sozinho não é uma engenharia reversa.';
+  } else {
+    $('#copilot-source-note').textContent='◎ Referência pública: '+(state.storeInfo?.title||'Google Play')+
+      '. O Copilot receberá requisitos e descrições públicas, sem fingir que analisamos o APK.';
+  }
+}
+function showCopilotTask(task) {
+  state.copilotTask=task;
+  $('#copilot-ready').classList.remove('hidden');
+  $('#copilot-task-path').textContent=task.missionPath;
+  $('#copilot-prompt').value=task.prompt;
+  $('#copilot-feedback').textContent='Missão privada salva. Abra o Copilot Agent no Codespace para programar o aplicativo.';
+}
+async function loadCopilotMissions(){
+  if(!state.token)return;
+  try{
+    const response=await api('copilot/missions');
+    const container=$('#copilot-history');
+    container.replaceChildren();
+    if(!response.missions?.length)return;
+    const title=document.createElement('h3');title.textContent='Missões preparadas';container.append(title);
+    for(const mission of response.missions.slice(0,15)){
+      const row=document.createElement('div');row.className='project-row';
+      const details=document.createElement('div'),name=document.createElement('strong'),kind=document.createElement('small');
+      name.textContent=mission.name;kind.textContent=mission.mode==='analysis'?'Análise real de APK':'Referência pública';
+      details.append(name,kind);
+      const open=document.createElement('button');open.type='button';open.className='btn-secondary';open.textContent='Abrir missão';
+      open.addEventListener('click',()=>{
+        showCopilotTask(mission);
+        $('#copilot-ready').scrollIntoView({behavior:'smooth',block:'center'});
+      });
+      row.append(details,open);container.append(row);
+    }
+  }catch{ /* Histórico de missões não impede a análise */ }
+}
+async function prepareCopilotMission(event) {
+  event.preventDefault();
+  const button=$('#btn-copilot-prepare');
+  const mode=$('#copilot-source').value;
+  const body={
+    mode,name:$('#copilot-name').value.trim(),
+    requirements:$('#copilot-requirements').value.trim()
+  };
+  if(mode==='analysis'){
+    const selected=state.job;
+    if(!selected || selected.mode!=='android'||selected.status!=='concluido'){
+      $('#copilot-feedback').textContent='Primeiro selecione uma análise de APK concluída.';
+      return;
+    }
+    body.jobId=selected.id;
+  } else body.storeUrl=$('#playstore-url').value.trim();
+  button.disabled=true;
+  $('#copilot-feedback').textContent='Preparando a tarefa de programação com os dados disponíveis...';
+  try{
+    const response=await api('copilot/prepare',{method:'POST',data:body});
+    showCopilotTask(response.task);
+    await loadCopilotMissions();
+    $('#copilot-ready').scrollIntoView({behavior:'smooth',block:'center'});
+  }catch(error){$('#copilot-feedback').textContent='Falha ao preparar tarefa: '+error.message;}
+  finally{button.disabled=false;}
+}
+async function copyCopilotTask() {
+  const text=state.copilotTask?.prompt;
+  if(!text)return;
+  await copyValue(text);
+  $('#copilot-feedback').textContent='Copiado. Cole no chat do Copilot em modo Agent, no Codespace.';
+}
+
 async function prepareAndroid() {
   if (!confirm('Instalar Java e JADX para analisar APKs neste Codespace? Pode baixar pacotes e consumir recursos do Codespaces.')) return;
   $('#btn-setup-android').disabled = true;
@@ -247,6 +323,7 @@ function updateSteps(job) {
   badge.className = 'job-tag' + (status === 'concluido' ? ' ok' : status === 'erro' || status === 'interrompido' ? ' bad' : status === 'executando' || status === 'iniciando' ? ' active' : '');
   $('#job-message').textContent = summaryText(job);
   $('#btn-analyze').disabled = Boolean(state.jobs.find((j) => j.status === 'executando' || j.status === 'iniciando'));
+  copilotSourceNote();
   const canBuild=job?.mode==='android' && job?.status==='concluido' && job?.reports?.includes('android-pacote');
   $('#btn-go-builder').classList.toggle('hidden',!canBuild);
   if(canBuild && !state.builderMode) setBuilderSource('analysis',job);
@@ -425,6 +502,7 @@ $('#login-form').addEventListener('submit', async (event) => {
     await health();
     await refreshJobs();
     await loadGeneratedProjects();
+    await loadCopilotMissions();
   } catch (error) {
     state.token = '';
     $('#login-error').textContent = error.message;
@@ -441,6 +519,9 @@ $('#mode-demo').addEventListener('click', () => setMode('demo'));
 $('#mode-upload').addEventListener('click', () => setMode('upload'));
 $('#mode-android').addEventListener('click', () => setMode('android'));
 $('#store-next').addEventListener('click', () => setMode('android'));
+$('#copilot-form').addEventListener('submit',prepareCopilotMission);
+$('#copilot-source').addEventListener('change',copilotSourceNote);
+$('#copilot-copy').addEventListener('click',copyCopilotTask);
 $('#store-build').addEventListener('click',()=>{setBuilderSource('public');$('#builder-panel').scrollIntoView({behavior:'smooth',block:'start'});});
 $('#btn-go-builder').addEventListener('click',()=>{setBuilderSource('analysis');$('#builder-panel').scrollIntoView({behavior:'smooth',block:'start'});});
 $('#builder-form').addEventListener('submit',buildProject);
@@ -483,10 +564,12 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => {
 });
 const params = new URLSearchParams(location.search);
 setMode(params.get('abrir') === 'android' ? 'android' : 'store');
+copilotSourceNote();
 if (state.token) {
   hideLogin();
   void health();
   void refreshJobs();
   void loadGeneratedProjects();
+  void loadCopilotMissions();
 } else showLogin();
 state.timer = setInterval(() => { if (state.token) void refreshJobs(); }, 2500);
