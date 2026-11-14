@@ -95,7 +95,7 @@ async function buildFiles({root,name,kind,id,description}){
       .replace('<span>TREINO<em>LAB</em><small>','<span>'+escapeHTML(name)+'<small>')
       .replace('TreinoLab: treinos e evolução organizados em um aplicativo próprio.',escapeHTML(name)+': acompanhamento de treinos e evolução.');
     files['app.js']=files['app.js'].replace("const KEY='treinolab-v1';","const KEY='rea-fitness-"+id+"';")
-      .replaceAll('TreinoLab',name.replaceAll(/[\r\n<>]/g,'').slice(0,70));
+      .replaceAll('TreinoLab','este aplicativo');
     files['sw.js']=files['sw.js'].replaceAll('treinolab-v1','rea-fitness-'+id);
     files['manifest.webmanifest']=manifest(name);
   } else {
