@@ -1,6 +1,6 @@
 /* REA Hub - interface local. Nenhum serviço externo ou CDN. */
 const $ = (selector) => document.querySelector(selector);
-const state = { token: sessionStorage.getItem('rea-hub-key') || localStorage.getItem('rea-hub-key') || '', mode: 'store', jobs: [], job: null, currentReport: '', reportText: '', timer: null };
+const state = { token: sessionStorage.getItem('rea-hub-key') || localStorage.getItem('rea-hub-key') || '', mode: 'store', jobs: [], job: null, storeInfo: null, builderMode: '', builderJobId: '', generatedProject: null, currentReport: '', reportText: '', timer: null };
 const labels = { diagnostico: 'Diagnóstico do Hopper', analise: 'Análise do programa', funcao: 'Detalhes da função', 'erro-analise': 'Log de erros da análise', 'erro-funcao': 'Log de erros da função', 'erro-diagnostico': 'Log do diagnóstico', 'android-diagnostico': 'Diagnóstico do JADX', 'android-pacote': 'Estrutura e manifesto do aplicativo', 'android-arquivos': 'Arquivos APK dentro do ZIP', 'android-instalacao': 'Preparação do Android', 'erro-android-instalacao': 'Erro na preparação do Android', 'android-classes': 'Classes de entrada (MainActivity)', 'erro-android-diagnostico': 'Erro no diagnóstico JADX', 'erro-android-pacote': 'Erro na inspeção do APK', 'erro-android-classes': 'Erro na busca de classes' };
 
 async function api(path, { method = 'GET', data = null, raw = false } = {}) {
@@ -74,8 +74,104 @@ async function lookupStore() {
   $('#store-package').textContent = 'Pacote Android: ' + info.packageId;
   $('#store-desc').textContent = (info.description || info.notice || '').slice(0, 700);
   $('#store-result').classList.remove('hidden');
+  state.storeInfo = info;
+  if (!state.builderMode) setBuilderSource('public');
   $('#job-message').textContent = 'Aplicativo identificado. Para fazer engenharia reversa, exporte o APK ou ZIP e selecione APK / ZIP.';
 }
+
+function setBuilderSource(mode, job = null) {
+  if (mode === 'analysis') {
+    const candidate = job || state.job;
+    if (!candidate || candidate.mode !== 'android' || candidate.status !== 'concluido' || !candidate.reports?.includes('android-pacote')) {
+      $('#builder-feedback').textContent = 'Primeiro conclua a análise de um APK.';
+      return;
+    }
+    state.builderMode = 'analysis';
+    state.builderJobId = candidate.id;
+    $('#builder-source').textContent = '✓ Análise real concluída: ' + candidate.filename + '. O gerador utilizará as informações observadas no APK.';
+    $('#btn-build-app').disabled = false;
+    if (!$('#builder-name').value.trim() || $('#builder-name').value.trim() === 'Meu App') $('#builder-name').value = 'Meu Treino';
+  } else if (mode === 'public' && state.storeInfo) {
+    state.builderMode = 'public';
+    state.builderJobId = '';
+    $('#builder-source').textContent = '◎ Referência pública: ' + (state.storeInfo.title || state.storeInfo.packageId) + '. Sem acesso ao APK nem ao código original.';
+    $('#btn-build-app').disabled = false;
+    if (state.storeInfo.packageId === 'app.befit') {
+      $('#builder-kind').value = 'treinos';
+      if (!$('#builder-name').value.trim() || $('#builder-name').value === 'Meu App') $('#builder-name').value = 'Meu Treino';
+    }
+  }
+  $('#builder-feedback').textContent = 'Pronto para criar um projeto original, editável e funcional.';
+}
+function showGeneratedProject(project) {
+  state.generatedProject = project;
+  $('#generated-view').classList.remove('hidden');
+  $('#generated-name').textContent = project.name + ' • projeto criado';
+  $('#generated-feature').textContent = project.features;
+  $('#generated-preview').href = project.preview;
+  $('#generated-frame').src = project.preview;
+  $('#builder-feedback').textContent = 'Projeto salvo neste Codespace. A prévia e o ZIP estão prontos.';
+}
+async function downloadGenerated(id) {
+  try {
+    const response = await fetch('/api/projects/' + id + '/zip', {
+      headers: { 'X-REA-Token': state.token }, cache: 'no-store'
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(()=>({error:'Não foi possível baixar.'}));
+      throw new Error(error.error || 'Download falhou.');
+    }
+    const blob = await response.blob(), href = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href=href;
+    anchor.download=(state.generatedProject?.name || 'meu-app').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-zA-Z0-9_-]/g,'-').toLowerCase()+'.zip';
+    anchor.click();
+    setTimeout(()=>URL.revokeObjectURL(href),5000);
+    $('#builder-feedback').textContent='Projeto ZIP preparado para download.';
+  } catch (error) { $('#builder-feedback').textContent = error.message; }
+}
+async function loadGeneratedProjects() {
+  if (!state.token) return;
+  try {
+    const list=(await api('projects')).projects || [];
+    const parent=$('#generated-projects');
+    parent.replaceChildren();
+    if (!list.length) return;
+    const head=document.createElement('h3');head.textContent='Projetos já criados';parent.append(head);
+    for (const proj of list) {
+      const row=document.createElement('div');row.className='project-row';
+      const info=document.createElement('div');
+      const title=document.createElement('strong');title.textContent=proj.name;
+      const details=document.createElement('small');details.textContent=(proj.kind||'projeto')+' · '+niceDate(proj.createdAt);
+      info.append(title,details);
+      const open=document.createElement('button');open.type='button';open.className='btn-secondary';open.textContent='Abrir';
+      open.addEventListener('click',()=>{showGeneratedProject(proj);$('#generated-view').scrollIntoView({behavior:'smooth',block:'center'});});
+      row.append(info,open);parent.append(row);
+    }
+  } catch { /* Histórico de projetos opcional */ }
+}
+async function buildProject(event) {
+  event.preventDefault();
+  const button=$('#btn-build-app');
+  if(!state.builderMode) return;
+  button.disabled=true;
+  $('#builder-feedback').textContent='Criando arquivos do aplicativo...';
+  try {
+    const data={
+      mode:state.builderMode,name:$('#builder-name').value.trim(),
+      kind:$('#builder-kind').value,description:$('#builder-description').value.trim()
+    };
+    if(state.builderMode==='analysis')data.jobId=state.builderJobId;
+    else data.storeUrl=$('#playstore-url').value.trim();
+    const response=await api('generate',{method:'POST',data});
+    showGeneratedProject(response.project);
+    await loadGeneratedProjects();
+    $('#generated-view').scrollIntoView({behavior:'smooth',block:'center'});
+  } catch(error) { $('#builder-feedback').textContent='Não foi possível criar o app: '+error.message; }
+  finally {button.disabled=false;}
+}
+
 async function prepareAndroid() {
   if (!confirm('Instalar Java e JADX para analisar APKs neste Codespace? Pode baixar pacotes e consumir recursos do Codespaces.')) return;
   $('#btn-setup-android').disabled = true;
@@ -120,6 +216,9 @@ function updateSteps(job) {
   badge.className = 'job-tag' + (status === 'concluido' ? ' ok' : status === 'erro' || status === 'interrompido' ? ' bad' : status === 'executando' || status === 'iniciando' ? ' active' : '');
   $('#job-message').textContent = summaryText(job);
   $('#btn-analyze').disabled = Boolean(state.jobs.find((j) => j.status === 'executando' || j.status === 'iniciando'));
+  const canBuild=job?.mode==='android' && job?.status==='concluido' && job?.reports?.includes('android-pacote');
+  $('#btn-go-builder').classList.toggle('hidden',!canBuild);
+  if(canBuild && !state.builderMode) setBuilderSource('analysis',job);
 }
 
 function renderHistory() {
@@ -294,12 +393,14 @@ $('#login-form').addEventListener('submit', async (event) => {
     hideLogin();
     await health();
     await refreshJobs();
+    await loadGeneratedProjects();
   } catch (error) {
     state.token = '';
     $('#login-error').textContent = error.message;
   }
 });
 $('#btn-lock').addEventListener('click', () => {
+  void api('logout',{method:'POST'}).catch(()=>{});
   state.token = ''; state.jobs = []; state.job = null;
   forgetLogin();
   showLogin();
@@ -309,6 +410,10 @@ $('#mode-demo').addEventListener('click', () => setMode('demo'));
 $('#mode-upload').addEventListener('click', () => setMode('upload'));
 $('#mode-android').addEventListener('click', () => setMode('android'));
 $('#store-next').addEventListener('click', () => setMode('android'));
+$('#store-build').addEventListener('click',()=>{setBuilderSource('public');$('#builder-panel').scrollIntoView({behavior:'smooth',block:'start'});});
+$('#btn-go-builder').addEventListener('click',()=>{setBuilderSource('analysis');$('#builder-panel').scrollIntoView({behavior:'smooth',block:'start'});});
+$('#builder-form').addEventListener('submit',buildProject);
+$('#generated-download').addEventListener('click',()=>{if(state.generatedProject)void downloadGenerated(state.generatedProject.id);});
 $('#btn-setup-android').addEventListener('click', prepareAndroid);
 $('#binary-file').addEventListener('change', () => {
   $('#upload-title').textContent = $('#binary-file').files[0]?.name || 'Escolher arquivo para analisar';
@@ -351,5 +456,6 @@ if (state.token) {
   hideLogin();
   void health();
   void refreshJobs();
+  void loadGeneratedProjects();
 } else showLogin();
 state.timer = setInterval(() => { if (state.token) void refreshJobs(); }, 2500);
