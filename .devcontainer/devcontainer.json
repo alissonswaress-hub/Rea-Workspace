@@ -14,12 +14,13 @@
   ],
   "portsAttributes": {
     "3000": {
-      "label": "REA Hub (painel privado)",
-      "onAutoForward": "notify"
+      "label": "REA Hub • Acesso privado pelo celular",
+      "onAutoForward": "openBrowser"
     },
     "4173": {
       "label": "TreinoLab (web app de treino)",
       "onAutoForward": "notify"
     }
-  }
+  },
+  "postStartCommand": "bash scripts/rea-hub-mobile.sh"
 }
