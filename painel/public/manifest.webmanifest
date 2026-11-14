@@ -1,0 +1,25 @@
+{
+  "name": "REA Hub | Laboratório Privado",
+  "short_name": "REA Hub",
+  "description": "Acesso privado pelo celular ao laboratório REA, Hopper e JADX.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0b11",
+  "theme_color": "#0a0b11",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Analisar APK",
+      "url": "/?abrir=android",
+      "description": "Enviar APK ou ZIP para inspeção."
+    }
+  ]
+}
