@@ -20,6 +20,7 @@
       <div class="top-controls">
         <span class="pill" id="pill-rea"><span class="dot"></span> REA</span>
         <span class="pill" id="pill-hopper"><span class="dot"></span> Hopper</span>
+        <span class="pill" id="pill-jadx"><span class="dot"></span> JADX</span>
         <button type="button" class="icon-btn" id="btn-lock" aria-label="Bloquear painel" title="Bloquear painel">⏻</button>
       </div>
     </header>
@@ -43,7 +44,8 @@
 
           <div class="mode" role="group" aria-label="Tipo de análise">
             <button id="mode-demo" class="mode-btn selected" type="button" aria-pressed="true">◧ Programa de exemplo</button>
-            <button id="mode-upload" class="mode-btn" type="button" aria-pressed="false">↑ Enviar meu arquivo</button>
+            <button id="mode-upload" class="mode-btn" type="button" aria-pressed="false">↑ Executável</button>
+            <button id="mode-android" class="mode-btn" type="button" aria-pressed="false">⬡ App Android</button>
           </div>
           <div class="example" id="demo-area">
             <div class="file-visual"><span class="file-icon">C</span>
@@ -56,19 +58,20 @@
             <label for="binary-file" class="upload-zone">
               <span class="upload-icon" aria-hidden="true">↑</span>
               <strong id="upload-title">Escolher arquivo para analisar</strong>
-              <span>ELF, EXE, DLL, Mach-O e outros arquivos suportados pelo REA</span>
-              <span class="mini">Até 12 MB. O arquivo nunca é executado pelo painel.</span>
+              <span id="upload-description">ELF, EXE, DLL, Mach-O e outros arquivos suportados pelo REA</span>
+              <span class="mini" id="upload-limit">Até 12 MB. O arquivo nunca é executado pelo painel.</span>
             </label>
             <input id="binary-file" type="file" aria-describedby="upload-advice">
             <p id="upload-advice">Use apenas arquivos que você tem autorização para analisar.</p>
           </div>
 
-          <label for="symbol" class="field-label">Função para inspecionar <span>(opcional)</span></label>
+          <div id="symbol-area"><label for="symbol" class="field-label">Função para inspecionar <span>(opcional)</span></label>
           <input id="symbol" class="text-field" type="text" maxlength="100" value="calcular_total" placeholder="Ex.: calcular_total" autocomplete="off">
-          <p class="field-note">No exemplo, a função já vem preenchida. Para outros arquivos, pode deixar vazia.</p>
+          <p class="field-note">No exemplo, a função já vem preenchida. Para outros arquivos, pode deixar vazia.</p></div>
+          <p id="android-tip" class="field-note hidden">Para analisar APKs, instale o JADX e o JDK no Codespace. A análise é estática e não executa o aplicativo. Também não recupera servidores ou funcionalidades online protegidas.</p>
 
           <button id="btn-analyze" type="button" class="btn-primary"><span aria-hidden="true">◈</span> Iniciar análise <span class="btn-arrow" aria-hidden="true">↗</span></button>
-          <div class="notice"><strong>Privacidade</strong><p>Processamos os arquivos dentro do seu Codespace. Os resultados ficam nas pastas locais <code>targets/</code> e <code>results/</code>, fora dos commits.</p></div>
+          <div class="notice"><strong>Privacidade e direitos</strong><p>Processamos os arquivos dentro do seu Codespace. Os resultados ficam nas pastas locais <code>targets/</code> e <code>results/</code>, fora dos commits. Analise apenas arquivos próprios ou para os quais tenha autorização; reproduza funcionalidades com código e identidade próprios.</p></div>
         </section>
 
         <aside class="stack">
