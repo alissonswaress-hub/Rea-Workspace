@@ -2,6 +2,45 @@
 
 Ambiente dedicado ao **REA (Reverse Engineer Anything)**, separado dos demais projetos.
 
+## REA Hub: painel visual (celular e computador)
+
+Este repositório agora inclui uma central para analisar arquivos com **REA + Hopper** pelo navegador, sem editar comandos toda vez. O painel roda **dentro do seu GitHub Codespace**, não é um site público de produção. Ele não faz upload de binários para o GitHub e não executa arquivos que você enviar.
+
+### Abrir o painel em seu Codespace existente
+
+1. Abra o Codespace **improved system** do `Rea-Workspace`.
+2. No terminal, execute **um único comando**:
+
+   ```bash
+   git pull --ff-only && npm start
+   ```
+
+3. O terminal mostrará **SENHA TEMPORARIA**. Copie a chave (não compartilhe).
+4. Na aba **Portas / Ports** do Codespaces, encontre a **porta 3000** e clique em **Abrir no navegador / Open in Browser**. Se não aparecer, na aba Portas clique em **Adicionar porta / Forward a Port** e digite `3000`.
+5. Cole a senha no painel. Pressione **Programa de exemplo → Iniciar análise** ou escolha seu próprio arquivo de até 12 MB.
+
+A porta deve continuar **Private (privada)**, nunca Public. Deixe o terminal aberto enquanto usar o painel. Para interromper, pressione **Ctrl+C** no terminal. O Codespaces possui franquias de uso e pode gerar custos.
+
+### O que o painel faz
+
+- Compila o exemplo `exemplos/loja_demo.c` para uma análise segura demonstrativa.
+- Recebe arquivos para análise **sem executá-los**. O REA faz o processamento com o Hopper localmente.
+- Exibe as etapas, consulta os relatórios JSON e permite copiar/baixar os resultados.
+- Inspeciona uma função opcional e salva o histórico em `results/painel/`.
+- Gera um **prompt para IA** com o relatório para ser copiado, mediante sua revisão. **Isso não significa integração automática com Codex, Copilot ou qualquer agente externo.** Para ativar esses agentes, suas instalações e autenticações precisam ser realizadas separadamente.
+
+### Segurança e limites
+
+- Senha efêmera gerada a cada execução. O painel bloqueia APIs sem a senha e guarda a chave apenas na sessão do navegador.
+- O repositório está **público**, mas `targets/` e `results/` são ignorados pelo Git. **Não execute `git add -f` nessas pastas.**
+- Ferramentas de análise também podem ter vulnerabilidades. Use apenas arquivos próprios ou com permissão; evite arquivos desconhecidos não confiáveis.
+- O Hopper requer instalação e licença próprias e a análise pode demorar ou falhar em formatos não suportados.
+- A configuração do caminho `/opt/hopper/bin/Hopper` já é detectada pelo painel; em um novo Codespace pode ser preciso instalar o Hopper novamente.
+
+### Testes automáticos
+
+O GitHub Actions executa `npm test` e valida interface, autenticação e um teste simulado de análise. Para a análise verdadeira com Hopper, utilize o Codespace que já tem Hopper instalado.
+
 ## Abrir pelo celular ou computador
 
 1. Acesse este repositório no GitHub.
