@@ -156,6 +156,13 @@
                 <strong>⚡ Gerar aplicativo automaticamente pela IA</strong>
                 <p class="field-note">Se instalar e autenticar o Copilot CLI uma vez no Codespace, poderá iniciar a programação pelo celular. O agente editará somente uma pasta isolada e NÃO poderá executar comandos shell.</p>
                 <div class="builder-source" id="copilot-cli-status">Verificando Copilot CLI...</div>
+                <div class="copilot-policy-help hidden" id="copilot-policy-help" role="alert">
+                  <strong>⚠ Copilot CLI bloqueado pelo GitHub</strong>
+                  <p>O aplicativo foi instalado e o login funcionou, mas sua conta ou organização não autorizou executar o Copilot CLI. Reinstalar não resolve esse bloqueio.</p>
+                  <a href="https://github.com/settings/copilot" target="_blank" rel="noopener noreferrer" class="btn-secondary">Verificar configurações do Copilot ↗</a>
+                  <button id="copilot-policy-retry" type="button" class="btn-secondary">Já liberei o acesso, tentar novamente</button>
+                  <p>Enquanto isso, use <b>Copiar tarefa para Copilot Agent no notebook</b> abaixo, caso o Agent esteja disponível no seu Codespace.</p>
+                </div>
                 <div class="copilot-cli-commands" id="copilot-cli-guide">
                   <span class="field-label">Ativação única no terminal do Codespace</span>
                   <code>npm install -g @github/copilot && copilot login</code>
