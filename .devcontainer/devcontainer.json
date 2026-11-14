@@ -9,11 +9,16 @@
   "postCreateCommand": "npm install --global rea-agents@6.9.0",
   "remoteUser": "vscode",
   "forwardPorts": [
-    3000
+    3000,
+    4173
   ],
   "portsAttributes": {
     "3000": {
       "label": "REA Hub (painel privado)",
+      "onAutoForward": "notify"
+    },
+    "4173": {
+      "label": "TreinoLab (web app de treino)",
       "onAutoForward": "notify"
     }
   }
