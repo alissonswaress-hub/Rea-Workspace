@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c0d16"><meta name="description" content="Aplicativo independente com funcionalidades iniciais.">
+<link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg" type="image/svg+xml">
+<title>Meu Projeto</title><link rel="stylesheet" href="./styles.css"><script src="./app.js" defer></script>
+</head><body>
+<header class="topbar"><div class="brand"><span class="brandicon">◈</span><span id="brand-name">MEU APP</span></div><span class="pill">PROJETO PRÓPRIO</span></header>
+<main>
+<section class="hero"><span class="eyebrow" id="category">APLICATIVO</span><h1 id="hero-title">Seu novo projeto</h1><p id="hero-desc">Um aplicativo independente para começar.</p><div class="row"><span class="chip">Grava dados neste dispositivo</span><span class="chip">Sem login</span></div></section>
+<div class="content-grid">
+<section class="panel"><div class="section-title"><div><span class="eyebrow">PAINEL</span><h2 id="section-heading">Começar</h2></div><span id="counter" class="counter">0</span></div><div id="main-content"></div></section>
+<aside class="panel aside"><span class="eyebrow">SEUS DADOS</span><h2>Gerenciamento</h2><p class="muted">Este é um aplicativo inicial. As informações não são sincronizadas entre aparelhos.</p><button id="export" class="secondary">Exportar meus dados</button><button id="reset" class="danger">Limpar dados</button><div class="foot-note"><b>Próximas evoluções:</b><p>Login, banco de dados, APIs reais, administração e publicação. Nenhum serviço pago está integrado.</p></div></aside>
+</div>
+</main><div id="toast" role="status" aria-live="polite"></div></body></html>
