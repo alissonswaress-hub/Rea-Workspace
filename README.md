@@ -16,6 +16,24 @@ Na aba **Portas**, clique na porta **4173** e selecione **Abrir no navegador**. 
 
 O TreinoLab funciona sem conta, com dados locais do navegador, e não deve ser usado como serviço de produção sem banco de dados, autenticação e revisão de segurança. Para documentação e funcionalidades, consulte [README TreinoLab](projetos/treinolab/README.md).
 
+## Comece aqui: analisar aplicativo Android somente pelo celular
+
+**Fluxo simples, sem computador ou ADB:** acesse o REA Hub na porta privada 3000 do seu Codespace.
+
+1. Cole o link da Google Play no campo **Link da Play Store** e toque em **Identificar aplicativo**. Isso identifica o app por informações públicas, **não analisa seu código**.
+2. Para uma inspeção de APK de um app que você pode estudar, instale o app no telefone. O painel inclui um atalho para o **[APK Extractor gratuito e de código aberto](https://play.google.com/store/apps/details?id=com.kolehoenicke.apkextractor)**. Ele exporta um `.apk` ou um ZIP com base + splits, sem computador, root ou ADB. Confira as condições e a fonte antes de instalar.
+3. Volte ao REA Hub, selecione **APK / ZIP**, toque **Preparar análise Android** se o JADX não estiver ativo e envie o arquivo exportado. O REA gerará relatórios do manifesto e classes quando o JADX estiver disponível.
+
+Para carregar a nova versão no **Codespace já existente** (um último passo de atualização):
+
+```bash
+git pull --ff-only && npm start
+```
+
+Se o painel antigo estiver ocupando a porta 3000, interrompa-o no terminal anterior com Ctrl+C antes de executar `npm start`. Deixe a porta **Private**. Sem o APK, nenhuma engenharia reversa real do app é possível a partir do link.
+
+**Limite atual:** arquivo de até 160 MB. Para ZIP com APKs divididos, o painel extrai e analisa o `base.apk`, lista os demais arquivos e informa que os componentes adicionais podem exigir análise separada. Não recupera servidores nem código-fonte original. Use apenas arquivos que tem autorização para examinar e reimplemente recursos com código próprio.
+
 ## Analisar aplicativos Android APK de verdade
 
 O REA Hub agora pode receber APKs Android com até **160 MB** e executar análise estática usando **JADX (Java) no Codespaces**, sem executar o app.
