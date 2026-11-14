@@ -1,3 +1,30 @@
+## ✦ Nova função: criar um aplicativo depois da análise
+
+O REA Hub agora contém a etapa **04 / CONSTRUIR → Criar meu aplicativo**.
+
+**Caminho A, com engenharia reversa real:** após analisar um APK com JADX, abra o relatório concluído e toque em **Criar meu app com esta análise**. Escolha um nome próprio, a categoria e as funcionalidades desejadas e clique em **Criar meu app**.
+
+**Caminho B, só com link da Play Store:** cole o link, toque em **Identificar aplicativo**, depois em **Criar meu app a partir dessa referência**. Isso gera um app original usando a **descrição pública**, sem fingir que o APK foi analisado.
+
+**Resultado:** o REA Hub gera código-fonte editável para uma PWA, exibe a **prévia funcionando na mesma página**, permite **Abrir prévia** e **Baixar projeto ZIP**. Os projetos ficam listados e são guardados localmente no Codespace em `results/gerados/` (fora do Git).
+
+Modelos funcionais atualmente disponíveis:
+- **Treinos e fitness:** fichas, biblioteca inicial de exercícios, registro de séries/cargas e histórico/gráfico.
+- **Agendamentos:** cadastro de horários locais, com checagem de conflito no mesmo horário.
+- **Loja e catálogo:** produtos de demonstração editáveis, carrinho e cópia de pedido.
+- **Tarefas:** lista interativa.
+- **Outros:** base inicial para organizar informações.
+
+**Limite essencial:** é um gerador de **MVPs originais por modelos locais**, não um agente de IA integrado nem um clonador automático de código proprietário. O arquivo de saída é um projeto **web/PWA**, não um APK compilado. Nenhum servidor, modelo de IA remoto, assinatura, dados privados ou aparência protegida do aplicativo original é reproduzido automaticamente. Os resultados da análise são referência, não a fonte de código do novo app.
+
+Para atualizar o painel que você já instalou no Codespaces, rode **uma vez** no terminal:
+
+```bash
+git pull --ff-only && bash scripts/rea-hub-mobile.sh --upgrade
+```
+
+Depois atualize o ícone/página **REA Hub** no celular. Mantenha a porta 3000 **PRIVATE**.
+
 ## Abrir REA Hub direto pelo celular
 
 O laboratório agora pode ser adicionado à tela inicial do Android, com login lembrado no aparelho e painel em segundo plano.
