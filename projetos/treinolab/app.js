@@ -63,7 +63,7 @@ function buildPlan(p=defaultProfile){
    muscleNames.forEach(m=>{
      const available=exercises.filter(e=>e.muscle===m && (p.place==='academia'||e.place==='Casa'));
      const count=muscleNames.length>=4?1:muscleNames.length===2?3:2;
-     available.slice(index%2, index%2+count).forEach(e=>{if(!picked.find(x=>x.id===e.id))picked.push({id:e.id,sets:p.level==='avancado'?4:3,reps:p.goal==='forca'?6:12,rest:p.goal==='forca'?120:75});});
+     Array.from({length:Math.min(count,available.length)},(_,j)=>available[(index+j)%available.length]).forEach(e=>{if(!picked.find(x=>x.id===e.id))picked.push({id:e.id,sets:p.level==='avancado'?4:3,reps:p.goal==='forca'?6:12,rest:p.goal==='forca'?120:75});});
      if(!available.length)exercises.filter(e=>e.muscle===m).slice(0,1).forEach(e=>picked.push({id:e.id,sets:3,reps:12,rest:75}));
    });
    return {id:uid(),name:'Treino '+tags[index],focus:muscleNames.slice(0,2).join(' + '),exercises:picked};
