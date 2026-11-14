@@ -17,3 +17,6 @@ artifacts/
 # Editor / OS
 .DS_Store
 *.swp
+
+# Private REA mobile login token (persists across Codespace rebuilds)
+.rea-private/
