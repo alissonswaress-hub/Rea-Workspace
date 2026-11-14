@@ -170,3 +170,9 @@ footer{display:flex;justify-content:space-between;gap:20px;padding:35px 0;font-s
 .copilot-cli-box #copilot-run{margin-top:12px}
 #copilot-run-feedback{line-height:1.6}
 @media(max-width:600px){.copilot-cli-box{padding:13px}}
+
+/* Diagnostic of GitHub Copilot CLI policy access and IDE Agent fallback */
+.copilot-policy-help{border:1px solid #936a41;background:#30271e;border-radius:14px;padding:16px;margin:12px 0;color:#f8e4cb}
+.copilot-policy-help strong{font-size:14px;color:#ffe5b4}
+.copilot-policy-help p{font-size:12px;line-height:1.6;color:#eed7ba;margin:10px 0}
+.copilot-policy-help a,.copilot-policy-help button{display:flex;width:100%;justify-content:center;align-items:center;text-align:center;min-height:46px;text-decoration:none;margin:9px 0;font-size:12px}
