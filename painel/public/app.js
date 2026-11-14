@@ -1,7 +1,7 @@
 /* REA Hub - interface local. Nenhum serviço externo ou CDN. */
 const $ = (selector) => document.querySelector(selector);
-const state = { token: sessionStorage.getItem('rea-hub-key') || '', mode: 'demo', jobs: [], job: null, currentReport: '', reportText: '', timer: null };
-const labels = { diagnostico: 'Diagnóstico do Hopper', analise: 'Análise do programa', funcao: 'Detalhes da função', 'erro-analise': 'Log de erros da análise', 'erro-funcao': 'Log de erros da função', 'erro-diagnostico': 'Log do diagnóstico', 'android-diagnostico': 'Diagnóstico do JADX', 'android-pacote': 'Estrutura e manifesto do aplicativo', 'android-classes': 'Classes de entrada (MainActivity)', 'erro-android-diagnostico': 'Erro no diagnóstico JADX', 'erro-android-pacote': 'Erro na inspeção do APK', 'erro-android-classes': 'Erro na busca de classes' };
+const state = { token: sessionStorage.getItem('rea-hub-key') || '', mode: 'store', jobs: [], job: null, currentReport: '', reportText: '', timer: null };
+const labels = { diagnostico: 'Diagnóstico do Hopper', analise: 'Análise do programa', funcao: 'Detalhes da função', 'erro-analise': 'Log de erros da análise', 'erro-funcao': 'Log de erros da função', 'erro-diagnostico': 'Log do diagnóstico', 'android-diagnostico': 'Diagnóstico do JADX', 'android-pacote': 'Estrutura e manifesto do aplicativo', 'android-arquivos': 'Arquivos APK dentro do ZIP', 'android-instalacao': 'Preparação do Android', 'erro-android-instalacao': 'Erro na preparação do Android', 'android-classes': 'Classes de entrada (MainActivity)', 'erro-android-diagnostico': 'Erro no diagnóstico JADX', 'erro-android-pacote': 'Erro na inspeção do APK', 'erro-android-classes': 'Erro na busca de classes' };
 
 async function api(path, { method = 'GET', data = null, raw = false } = {}) {
   const response = await fetch('/api/' + path, {
@@ -40,22 +40,48 @@ async function health() {
 function setMode(mode) {
   state.mode = mode;
   const demo = mode === 'demo';
+  const android = mode === 'android';
+  const store = mode === 'store';
+  $('#store-area').classList.toggle('hidden', !store);
   $('#demo-area').classList.toggle('hidden', !demo);
-  $('#upload-area').classList.toggle('hidden', demo);
-  $('#mode-demo').classList.toggle('selected', demo);
-  $('#mode-upload').classList.toggle('selected', mode === 'upload');
-  $('#mode-android').classList.toggle('selected', mode === 'android');
-  $('#mode-demo').setAttribute('aria-pressed', String(demo));
-  $('#mode-upload').setAttribute('aria-pressed', String(mode === 'upload'));
-  $('#mode-android').setAttribute('aria-pressed', String(mode === 'android'));
-  $('#symbol-area').classList.toggle('hidden', mode === 'android');
-  $('#android-tip').classList.toggle('hidden', mode !== 'android');
-  $('#binary-file').accept = mode === 'android' ? '.apk,application/vnd.android.package-archive' : '';
-  $('#upload-title').textContent = mode === 'android' ? 'Escolher APK Android' : 'Escolher arquivo para analisar';
-  $('#upload-description').textContent = mode === 'android' ? 'Arquivo APK instalado legitimamente ou recebido com autorização' : 'ELF, EXE, DLL, Mach-O e outros arquivos suportados pelo REA';
-  $('#upload-limit').textContent = mode === 'android' ? 'Até 160 MB. O APK será analisado sem ser executado.' : 'Até 12 MB. O arquivo nunca é executado pelo painel.';
+  $('#upload-area').classList.toggle('hidden', store || demo);
+  for (const [id, selected] of [['mode-store', store], ['mode-demo', demo], ['mode-upload', mode === 'upload'], ['mode-android', android]]) {
+    const control = $('#' + id);
+    control.classList.toggle('selected', selected);
+    control.setAttribute('aria-pressed', String(selected));
+  }
+  $('#symbol-area').classList.toggle('hidden', store || android);
+  $('#android-tip').classList.toggle('hidden', !android);
+  $('#binary-file').accept = android ? '.apk,.apks,.zip,.xapk,application/vnd.android.package-archive,application/zip' : '';
+  $('#upload-title').textContent = android ? 'Selecione o APK ou ZIP do aplicativo' : 'Escolha um executável';
+  $('#upload-description').textContent = android ? 'APK único ou ZIP/APKS com todos os arquivos exportados do celular' : 'ELF, EXE, DLL, Mach-O e outros suportados pelo REA';
+  $('#upload-limit').textContent = android ? 'Até 160 MB. Não executamos o aplicativo.' : 'Até 12 MB. Não executamos arquivos enviados.';
+  $('#analyze-label').textContent = store ? 'Identificar aplicativo' : 'Iniciar análise';
   $('#binary-file').value = '';
   $('#symbol').value = demo ? 'calcular_total' : '';
+}
+async function lookupStore() {
+  const url = $('#playstore-url').value.trim();
+  $('#store-result').classList.add('hidden');
+  $('#job-message').textContent = 'Identificando aplicativo na Play Store...';
+  const info = await api('playstore', { method: 'POST', data: { url } });
+  $('#store-title').textContent = info.title || 'Aplicativo: ' + info.packageId;
+  $('#store-package').textContent = 'Pacote Android: ' + info.packageId;
+  $('#store-desc').textContent = (info.description || info.notice || '').slice(0, 700);
+  $('#store-result').classList.remove('hidden');
+  $('#job-message').textContent = 'Aplicativo identificado. Para fazer engenharia reversa, exporte o APK ou ZIP e selecione APK / ZIP.';
+}
+async function prepareAndroid() {
+  if (!confirm('Instalar Java e JADX para analisar APKs neste Codespace? Pode baixar pacotes e consumir recursos do Codespaces.')) return;
+  $('#btn-setup-android').disabled = true;
+  $('#setup-status').textContent = 'Preparação iniciada. Acompanhe o status em Acompanhamento.';
+  try {
+    const response = await api('android-setup', { method: 'POST' });
+    state.job = { id: response.id };
+    await refreshJobs();
+    $('#title-status').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (error) { $('#setup-status').textContent = 'Não foi possível iniciar: ' + error.message; }
+  finally { $('#btn-setup-android').disabled = false; }
 }
 function niceDate(date) {
   try { return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(date)); }
@@ -64,14 +90,14 @@ function niceDate(date) {
 function summaryText(job) {
   if (!job) return 'Selecione um arquivo para começar.';
   if (job.status === 'erro') return job.error || 'Ocorreu uma falha.';
-  if (job.status === 'concluido') return job.warning ? 'Análise concluída, com aviso: ' + job.warning : 'Análise concluída. Abra os relatórios abaixo.';
+  if (job.status === 'concluido') return job.warning ? 'Concluído com aviso: ' + job.warning : 'Concluído. Abra os relatórios abaixo.';
   if (job.status === 'interrompido') return 'A execução foi interrompida por reinício do servidor.';
   return job.step || 'Analisando...';
 }
 function updateSteps(job) {
   const steps = [...document.querySelectorAll('#job-steps li')];
-  steps[1].querySelector('div').childNodes[0].textContent = job?.mode === 'android' ? 'Diagnóstico do JADX' : 'Diagnóstico do Hopper';
-  steps[2].querySelector('div').childNodes[0].textContent = job?.mode === 'android' ? 'Inspeção do APK Android' : 'Análise com o REA';
+  steps[1].querySelector('div').childNodes[0].textContent = job?.mode === 'android' || job?.mode === 'setup' ? 'Configuração do Android' : 'Diagnóstico do Hopper';
+  steps[2].querySelector('div').childNodes[0].textContent = job?.mode === 'android' ? 'Inspeção do APK Android' : job?.mode === 'setup' ? 'Verificação do JADX' : 'Análise com o REA';
   const status = job?.status || 'aguardando';
   let active = 0;
   if (job) {
@@ -111,7 +137,7 @@ function renderHistory() {
     const strong = document.createElement('strong');
     strong.textContent = job.filename;
     const small = document.createElement('small');
-    small.textContent = niceDate(job.createdAt) + ' · ' + (job.mode === 'demo' ? 'Programa de exemplo' : job.mode === 'android' ? 'APK Android' : 'Arquivo enviado');
+    small.textContent = niceDate(job.createdAt) + ' · ' + (job.mode === 'demo' ? 'Programa de exemplo' : job.mode === 'android' ? 'APK Android' : job.mode === 'setup' ? 'Preparar análise Android' : 'Arquivo enviado');
     info.append(strong, small);
     const status = document.createElement('span');
     status.className = 'history-status' + (job.status === 'erro' ? ' bad' : '');
@@ -195,12 +221,13 @@ async function begin() {
   btn.disabled = true;
   $('#job-message').textContent = 'Preparando análise...';
   try {
+    if (state.mode === 'store') { await lookupStore(); return; }
     const data = { mode: state.mode, symbol: $('#symbol').value.trim() };
     if (state.mode === 'android') {
       const file = $('#binary-file').files[0];
-      if (!file) throw new Error('Selecione o arquivo APK Android.');
-      if (!file.name.toLowerCase().endsWith('.apk')) throw new Error('Selecione um arquivo .apk.');
-      if (file.size > 160 * 1024 * 1024) throw new Error('O APK ultrapassa 160 MB.');
+      if (!file) throw new Error('Selecione o APK ou ZIP exportado do celular.');
+      if (!/\.(apk|zip|apks|xapk)$/i.test(file.name)) throw new Error('Selecione .apk, .zip ou .apks.');
+      if (file.size > 160 * 1024 * 1024) throw new Error('O arquivo ultrapassa 160 MB.');
       const response = await fetch('/api/android-upload', {
         method: 'POST', headers: { 'X-REA-Token': state.token, 'X-REA-Filename': encodeURIComponent(file.name) }, body: file, cache: 'no-store'
       });
@@ -270,9 +297,12 @@ $('#btn-lock').addEventListener('click', () => {
   sessionStorage.removeItem('rea-hub-key');
   showLogin();
 });
+$('#mode-store').addEventListener('click', () => setMode('store'));
 $('#mode-demo').addEventListener('click', () => setMode('demo'));
 $('#mode-upload').addEventListener('click', () => setMode('upload'));
 $('#mode-android').addEventListener('click', () => setMode('android'));
+$('#store-next').addEventListener('click', () => setMode('android'));
+$('#btn-setup-android').addEventListener('click', prepareAndroid);
 $('#binary-file').addEventListener('change', () => {
   $('#upload-title').textContent = $('#binary-file').files[0]?.name || 'Escolher arquivo para analisar';
 });
@@ -287,6 +317,7 @@ $('#btn-prompt').addEventListener('click', () => {
   void copyValue(prompt);
 });
 
+setMode('store');
 if (state.token) {
   hideLogin();
   void health();
