@@ -224,7 +224,7 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
         catch (error) { job.warning = cleanString(error.message, 600); }
         job.step = 'Relatórios Android disponíveis';
         job.status = 'concluido';
-      } else if (requestData.mode !== 'setup') {
+      } else if (requestData.mode !== 'setup' && requestData.mode !== 'copilot') {
       job.step = 'Diagnosticando Hopper';
       await persist(job);
       const diagnostic = await call(job, 'rea', ['doctor', '--provider', 'hopper', '--json'], 'diagnostico', 60000);
