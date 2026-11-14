@@ -6,6 +6,7 @@ import { promises as fs, constants as fsConstants, createWriteStream } from 'nod
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { execFile } from 'node:child_process';
+import { unpackBaseApk } from './apk-bundle.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -13,7 +14,7 @@ const STATIC = path.join(HERE, 'public');
 const MAX_FILE_BYTES = 12 * 1024 * 1024;
 const MAX_BODY_BYTES = 17 * 1024 * 1024;
 const MAX_APK_BYTES = 160 * 1024 * 1024;
-const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnostico', 'erro-analise', 'erro-funcao', 'android-diagnostico', 'android-pacote', 'android-classes', 'erro-android-diagnostico', 'erro-android-pacote', 'erro-android-classes']);
+const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnostico', 'erro-analise', 'erro-funcao', 'android-diagnostico', 'android-pacote', 'android-classes', 'android-arquivos', 'erro-android-diagnostico', 'erro-android-pacote', 'erro-android-classes']);
 const MIME = { '/': 'text/html; charset=utf-8', '/styles.css': 'text/css; charset=utf-8', '/app.js': 'text/javascript; charset=utf-8' };
 const STATIC_PATH = { '/': 'index.html', '/styles.css': 'styles.css', '/app.js': 'app.js' };
 
@@ -115,9 +116,18 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
 
       if (requestData.mode === 'android') {
         target = requestData.targetPath;
-        if (!target.startsWith(uploadsDir + path.sep) || !target.toLowerCase().endsWith('.apk')) throw new Error('Arquivo APK inválido.');
+        if (!target.startsWith(uploadsDir + path.sep) || !/\.(apk|zip|apks|xapk)$/i.test(target)) throw new Error('Arquivo Android inválido.');
         const meta = await fs.stat(target);
-        if (!meta.isFile() || !meta.size || meta.size > MAX_APK_BYTES) throw new Error('APK inválido ou muito grande.');
+        if (!meta.isFile() || !meta.size || meta.size > MAX_APK_BYTES) throw new Error('Arquivo Android inválido ou muito grande.');
+        if (/\.(zip|apks|xapk)$/i.test(target)) {
+          job.step = 'Abrindo pacote de APKs do celular';
+          await persist(job);
+          const original = target;
+          target = path.join(uploadsDir, job.id + '-base.apk');
+          const summary = await unpackBaseApk(original, target);
+          await saveReport(job, 'android-arquivos', JSON.stringify(summary, null, 2));
+          if (summary.warning) job.warning = summary.warning;
+        }
       } else if (requestData.mode === 'demo') {
         target = path.join(uploadsDir, 'demo-' + job.id);
         const src = path.join(root, 'exemplos', 'loja_demo.c');
@@ -249,9 +259,9 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
       if (req.method === 'POST' && pathname === '/api/android-upload') {
         if (running) return json(res, 409, { error: 'Já existe uma análise em andamento.' });
         const filename = safeName(req.headers['x-rea-filename'] || 'aplicativo.apk');
-        if (!filename.toLowerCase().endsWith('.apk')) return json(res, 400, { error: 'Selecione um arquivo .apk. Arquivos .apks devem ser separados antes.' });
+        if (!/\.(apk|zip|apks|xapk)$/i.test(filename)) return json(res, 400, { error: 'Envie um APK ou pacote ZIP/APKS/XAPK exportado do celular.' });
         const givenSize = Number(req.headers['content-length'] || 0);
-        if (givenSize > MAX_APK_BYTES) return json(res, 413, { error: 'APK acima do limite de 160 MB.' });
+        if (givenSize > MAX_APK_BYTES) return json(res, 413, { error: 'Arquivo acima do limite de 160 MB.' });
         running = true;
         await fs.mkdir(uploadsDir, { recursive: true });
         const targetPath = path.join(uploadsDir, randomUUID() + '-' + filename);
@@ -260,7 +270,7 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
           const guard = new Transform({
             transform(chunk, encoding, callback) {
               count += chunk.length;
-              if (count > MAX_APK_BYTES) callback(Object.assign(new Error('APK maior que 160 MB.'), { statusCode: 413 }));
+              if (count > MAX_APK_BYTES) callback(Object.assign(new Error('Pacote maior que 160 MB.'), { statusCode: 413 }));
               else callback(null, chunk);
             }
           });
