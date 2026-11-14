@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020"><meta name="description" content="TreinoLab: treinos e evolução organizados em um aplicativo próprio.">
+<title>TreinoLab | Sua evolução</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="stylesheet" href="./styles.css">
+<script defer src="./app.js"></script>
+</head>
+<body>
+<div id="app">
+<header class="topbar">
+  <div class="brand"><span class="brandmark">T<span>✦</span></span><span>TREINO<em>LAB</em><small>EVOLUÇÃO INTELIGENTE</small></span></div>
+  <div class="head-actions"><span id="today-date" class="muted small"></span><button type="button" class="iconbutton" data-action="settings" title="Configurações" aria-label="Configurações">⚙</button></div>
+</header>
+<div class="app-layout">
+<nav class="sidebar" aria-label="Navegação principal">
+  <div class="side-caption">SEU ESPAÇO</div>
+  <button data-nav="inicio" class="side-link active"><span>⌂</span> Início</button>
+  <button data-nav="treinos" class="side-link"><span>▦</span> Meus treinos</button>
+  <button data-nav="exercicios" class="side-link"><span>◎</span> Exercícios</button>
+  <button data-nav="evolucao" class="side-link"><span>↗</span> Evolução</button>
+  <button data-nav="perfil" class="side-link"><span>◈</span> Perfil</button>
+  <div class="side-footer"><span class="pulse"></span> Dados no seu dispositivo<br><small>Sem conta e sem assinatura</small></div>
+</nav>
+<main id="main" tabindex="-1"></main>
+</div>
+<nav class="bottom-nav" aria-label="Navegação móvel">
+  <button data-nav="inicio" class="active"><span>⌂</span>Início</button>
+  <button data-nav="treinos"><span>▦</span>Treinos</button>
+  <button data-nav="exercicios"><span>◎</span>Exercícios</button>
+  <button data-nav="evolucao"><span>↗</span>Evolução</button>
+  <button data-nav="perfil"><span>◈</span>Perfil</button>
+</nav>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="modal-root"></div>
+</div>
+</body>
+</html>
