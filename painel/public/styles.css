@@ -102,3 +102,32 @@ footer{display:flex;justify-content:space-between;gap:20px;padding:35px 0;font-s
   #btn-mobile-help{min-width:38px}
   .hero{padding:30px 0 25px}
 }
+
+/* Etapa 04: construtor de aplicativos próprios */
+.builder-panel{position:relative;overflow:hidden}
+.builder-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:#30264b;border:1px solid #66518c;font-size:25px;color:#d4baff}
+.builder-source{padding:14px;border-radius:12px;background:#1c2730;border:1px solid #38575b;font-size:12px;line-height:1.55;color:#c9e5e2;margin:17px 0}
+.builder-panel form{display:flex;flex-direction:column;gap:8px}
+.builder-panel .field-label{margin-top:8px}
+.builder-description{min-height:91px;line-height:1.5;resize:vertical;max-width:100%}
+#btn-build-app{margin-top:8px;min-height:49px}
+#builder-feedback{margin:13px 0 0;min-height:25px}
+.generated-success{display:flex;align-items:center;gap:13px;padding:15px;background:#1c3029;border:1px solid #487963;border-radius:13px;margin-top:15px}
+.generated-success .generated-check{border-radius:50%;background:#b3f8ce;color:#0e291e;width:35px;height:35px;flex:0 0 35px;display:grid;place-items:center;font-size:22px;font-weight:850}
+.generated-success strong{font-size:15px;color:#dcffec}.generated-success p{margin:4px 0 0}
+.generated-actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.generated-actions>*{min-width:142px;flex:1;display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none;min-height:47px}
+#generated-frame{display:block;width:100%;height:540px;border:1px solid #3f3e5e;border-radius:16px;background:#10131a}
+.generated-projects{margin-top:16px;border-top:1px solid #373445;padding-top:15px}
+.generated-projects h3{font-size:15px;margin:5px 0 12px}
+.project-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid #ffffff11}
+.project-row>div{min-width:0}.project-row strong{font-size:13px;display:block;overflow-wrap:anywhere}.project-row small{display:block;color:#9e9baa;font-size:11px;margin-top:4px}
+.project-row button{min-height:44px;min-width:74px}
+.store-action-row{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+.store-action-row button{min-height:44px}
+@media(max-width:600px){
+  .builder-panel{padding:20px}
+  #generated-frame{height:490px}
+  .generated-actions{flex-direction:column}
+  .generated-actions>*{width:100%}
+}
