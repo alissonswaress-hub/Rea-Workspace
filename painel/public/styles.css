@@ -70,3 +70,21 @@ footer{display:flex;justify-content:space-between;gap:20px;padding:35px 0;font-s
 @media(max-width:440px){.pill{font-size:10px;padding:7px}.top-controls{gap:5px}.pill .dot{margin-right:3px}.logo{gap:7px}.logo small{font-size:8px}.icon-btn{width:34px;height:34px}.hero-points{display:grid;gap:8px}.mode{gap:3px}.mode-btn{font-size:12px;padding:11px 5px}.report-actions{flex-wrap:wrap}.report-actions .btn-secondary{min-width:28%}footer{flex-direction:column;gap:8px}}
 
 @media(max-width:600px){.mode{flex-wrap:wrap}.mode-btn{flex:1 1 130px}.top-controls{flex-wrap:wrap;justify-content:end}.pill{font-size:10px}}
+
+/* Fluxo guiado para links da Play Store e arquivos do celular */
+.mode{flex-wrap:wrap}
+.mode-btn{flex:1 1 140px;white-space:normal}
+.store-start{margin-bottom:13px}
+.store-start .field-label{margin-top:11px}
+.store-start .text-field{font-size:13px;overflow-wrap:anywhere}
+.store-result{border:1px solid #53634f;background:#1d2b26;border-radius:12px;padding:15px;margin-top:16px;overflow-wrap:anywhere}
+.store-result strong{display:block;font-size:16px;color:#ecffe7}
+.store-result p{line-height:1.6}
+.store-result .btn-secondary{width:100%;margin-top:6px;min-height:46px}
+.export-guide{background:linear-gradient(145deg,#231f34,#181c29);border:1px solid #49405f;border-radius:13px;padding:18px;margin:20px 0}
+.export-guide>strong{color:#e6ddff;font-size:14px}
+.export-guide>p{color:#bdc0d1;font-size:12px;line-height:1.6;margin:9px 0}
+.export-guide .extractor-link{display:flex;justify-content:center;align-items:center;background:#302749;color:#f2edff;border-color:#655591;margin-top:15px;text-decoration:none;text-align:center}
+.export-guide small{display:block;color:#9e9caf;font-size:11px;line-height:1.5;margin-top:11px}
+.setup-button{display:block;min-width:185px;max-width:100%;margin:12px 0}
+#setup-status{display:block}
