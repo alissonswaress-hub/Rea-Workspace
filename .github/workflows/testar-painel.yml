@@ -25,6 +25,7 @@ jobs:
         run: |
           node --check painel/server.mjs
           node --check painel/public/sw.js
+          node --check painel/copilot-bridge.mjs
           node --check painel/generator.mjs
           node --check painel/templates/base/app.js
           node --check painel/public/app.js
