@@ -17,7 +17,9 @@ test('Painel REA: acesso protegido, exemplo e upload analisados sem executar upl
     if (command.includes('demo-')) return { ok: true, code: 0, stdout: 'total_centavos=4050 lucro_centavos=1950\n', stderr: '' };
     if (command === 'rea') {
       if (args[0] === '--version') return { ok: true, code: 0, stdout: 'rea 6.9.0', stderr: '' };
-      if (args[0] === 'doctor') return { ok: true, code: 0, stdout: '{"healthy":true,"checks":[{"name":"hopper","ok":true}]}', stderr: '' };
+      if (args[0] === 'doctor') return { ok: true, code: 0, stdout: '{"healthy":true,"checks":[{"name":"hopper","ok":true},{"name":"jadx","ok":true}]}', stderr: '' };
+      if (args[0] === 'inspect-android-package') return { ok: true, code: 0, stdout: '{"normalized_result":{"package_name":"app.befit","manifest":{"activities":[]}}}', stderr: '' };
+      if (args[0] === 'search-android-classes') return { ok: true, code: 0, stdout: '{"classes":[{"name":"MainActivity"}]}', stderr: '' };
       if (args[0] === 'analyze') return { ok: true, code: 0, stdout: '{"symbols":["calcular_total"]}', stderr: '' };
       if (args[0] === 'function') return { ok: true, code: 0, stdout: '{"name":"calcular_total","address":"0x1197"}', stderr: '' };
     }
@@ -80,6 +82,26 @@ test('Painel REA: acesso protegido, exemplo e upload analisados sem executar upl
   const binary = await waitUntilFinished((await uploaded.json()).id);
   assert.equal(binary.status, 'concluido', binary.error);
   assert.equal(binary.filename, 'usuario.exe');
+
+  const forbiddenAndroid = await fetch(base + '/api/android-upload', { method: 'POST', body: Buffer.from([0x50,0x4b,0x03,0x04]), headers: { 'x-rea-filename': 'befit.apk' } });
+  assert.equal(forbiddenAndroid.status, 401);
+  const wrongType = await fetch(base + '/api/android-upload', { method: 'POST', body: 'not-an-apk', headers: { ...headers, 'x-rea-filename': 'arquivo.exe' } });
+  assert.equal(wrongType.status, 400);
+  const androidUpload = await fetch(base + '/api/android-upload', {
+    method: 'POST', headers: { 'x-rea-token': 'minha-chave-de-teste', 'x-rea-filename': 'befit.apk', 'content-type': 'application/vnd.android.package-archive' },
+    body: Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00])
+  });
+  assert.equal(androidUpload.status, 202);
+  const android = await waitUntilFinished((await androidUpload.json()).id);
+  assert.equal(android.status, 'concluido', android.error);
+  assert.ok(android.reports.includes('android-diagnostico'));
+  assert.ok(android.reports.includes('android-pacote'));
+  assert.ok(android.reports.includes('android-classes'));
+  const packageReport = await fetch(base + '/api/reports/' + android.id + '/android-pacote', { headers });
+  assert.equal(packageReport.status, 200);
+  assert.match(await packageReport.text(), /app\.befit/);
+  assert.ok(calls.some(item => item.command === 'rea' && item.args[0] === 'inspect-android-package'));
+  assert.equal(calls.filter(item => item.command.endsWith('befit.apk')).length, 0, 'Um APK enviado nao pode ser executado.');
 
   const receivedUploads = calls.filter(item => item.command !== 'rea' && item.command !== 'gcc' && !item.command.includes('demo-'));
   assert.equal(receivedUploads.length, 0, 'Um binário enviado pelo usuário não pode ser executado.');
