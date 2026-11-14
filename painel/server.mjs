@@ -15,7 +15,7 @@ const STATIC = path.join(HERE, 'public');
 const MAX_FILE_BYTES = 12 * 1024 * 1024;
 const MAX_BODY_BYTES = 17 * 1024 * 1024;
 const MAX_APK_BYTES = 160 * 1024 * 1024;
-const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnostico', 'erro-analise', 'erro-funcao', 'android-diagnostico', 'android-pacote', 'android-classes', 'android-arquivos', 'erro-android-diagnostico', 'erro-android-pacote', 'erro-android-classes']);
+const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnostico', 'erro-analise', 'erro-funcao', 'android-diagnostico', 'android-pacote', 'android-classes', 'android-arquivos', 'android-instalacao', 'erro-android-instalacao', 'erro-android-diagnostico', 'erro-android-pacote', 'erro-android-classes']);
 const MIME = { '/': 'text/html; charset=utf-8', '/styles.css': 'text/css; charset=utf-8', '/app.js': 'text/javascript; charset=utf-8' };
 const STATIC_PATH = { '/': 'index.html', '/styles.css': 'styles.css', '/app.js': 'app.js' };
 
@@ -115,7 +115,13 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
       await persist(job);
       let target;
 
-      if (requestData.mode === 'android') {
+      if (requestData.mode === 'setup') {
+        job.step = 'Preparando Java e JADX no Codespace';
+        await persist(job);
+        await call(job, 'bash', [path.join(root, 'scripts/preparar-rea-android.sh')], 'android-instalacao', 600000);
+        job.step = 'JADX preparado. Agora envie um APK ou ZIP';
+        job.status = 'concluido';
+      } else if (requestData.mode === 'android') {
         target = requestData.targetPath;
         if (!target.startsWith(uploadsDir + path.sep) || !/\.(apk|zip|apks|xapk)$/i.test(target)) throw new Error('Arquivo Android inválido.');
         const meta = await fs.stat(target);
@@ -164,7 +170,7 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
         catch (error) { job.warning = cleanString(error.message, 600); }
         job.step = 'Relatórios Android disponíveis';
         job.status = 'concluido';
-      } else {
+      } else if (requestData.mode !== 'setup') {
       job.step = 'Diagnosticando Hopper';
       await persist(job);
       const diagnostic = await call(job, 'rea', ['doctor', '--provider', 'hopper', '--json'], 'diagnostico', 60000);
@@ -256,6 +262,18 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
       if (req.method === 'GET' && pathname === '/api/jobs') {
         const list = [...jobs.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 40);
         return json(res, 200, { jobs: list });
+      }
+      if (req.method === 'POST' && pathname === '/api/android-setup') {
+        if (running) return json(res, 409, { error: 'Já existe uma operação em andamento.' });
+        const job = {
+          id: randomUUID(), filename: 'Preparar análise Android', mode: 'setup',
+          symbol: '', status: 'iniciando', step: 'Aguardando preparação',
+          createdAt: new Date().toISOString(), finishedAt: null, error: '', warning: '', reports: []
+        };
+        running = true;
+        jobs.set(job.id, job);
+        void runJob(job, { mode: 'setup' });
+        return json(res, 202, { id: job.id });
       }
       if (req.method === 'POST' && pathname === '/api/playstore') {
         const body = await readBody(req);
