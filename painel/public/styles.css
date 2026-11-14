@@ -139,3 +139,23 @@ footer{display:flex;justify-content:space-between;gap:20px;padding:35px 0;font-s
 .draft-delete{color:#ffb0bb!important;border-color:#884052!important;background:#351f2a!important;min-height:44px}
 .project-row .draft-delete{flex:0 0 auto}
 @media(max-width:580px){.project-row{flex-wrap:wrap}.project-row>div{flex-basis:100%}.project-row button{flex:1 1 85px;min-height:45px}}
+
+/* Ponte real REA -> GitHub Copilot Agent */
+.copilot-panel{border-color:#5a4b85;background:linear-gradient(155deg,#221d36,#141824 65%)}
+.copilot-panel .panel-top{align-items:center}
+.copilot-panel form{display:flex;flex-direction:column;gap:9px}
+.copilot-panel .field-label{margin-top:8px}
+.copilot-panel textarea{font-size:13px;line-height:1.55;resize:vertical;min-height:155px}
+.copilot-panel #btn-copilot-prepare{min-height:50px;margin-top:10px}
+.copilot-panel #copilot-ready .generated-success{margin-bottom:17px}
+.copilot-task-path{border:1px solid #45445e;background:#111522;border-radius:11px;padding:13px;margin:7px 0 16px;overflow-wrap:anywhere;font:12px/1.5 ui-monospace,Consolas,monospace;color:#d4e2ff}
+.copilot-prompt{min-height:142px!important}
+.copilot-history{border-top:1px solid #45405c;margin-top:20px;padding-top:11px}
+.copilot-history:empty{display:none}
+.copilot-history h3{font-size:15px;margin:7px 0}
+.copilot-panel .generated-actions>a{text-align:center}
+@media(max-width:600px){
+  .copilot-panel{padding:20px}
+  .copilot-panel .generated-actions{display:flex;flex-direction:column}
+  .copilot-panel .generated-actions>*{min-height:50px;width:100%}
+}
