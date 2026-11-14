@@ -1,3 +1,17 @@
+## Abrir REA Hub direto pelo celular
+
+O laboratório agora pode ser adicionado à tela inicial do Android, com login lembrado no aparelho e painel em segundo plano.
+
+No **Codespace existente**, abra um novo terminal e execute **uma única vez**:
+
+```bash
+git pull --ff-only && bash scripts/rea-hub-mobile.sh --upgrade
+```
+
+O terminal imprimirá **o link privado exato** do seu REA Hub e sua senha inicial. Abra esse link pelo Chrome do celular, marque **Lembrar acesso neste celular** e escolha **⋮ → Adicionar à tela inicial**. Mantenha a porta **3000 privada**.
+
+O Codespaces pode pausar. Se o atalho não abrir, inicie seu Codespace em https://github.com/codespaces. O servidor foi configurado para reiniciar nas próximas sessões. Veja [guia completo para celular](docs/ACESSO-CELULAR.md).
+
 # REA Workspace
 
 Ambiente dedicado ao **REA (Reverse Engineer Anything)**, separado dos demais projetos.
