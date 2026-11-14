@@ -1,0 +1,14 @@
+{
+  "name": "rea-workspace-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Painel privado de engenharia reversa com REA e Hopper no GitHub Codespaces",
+  "type": "module",
+  "scripts": {
+    "start": "node painel/server.mjs",
+    "test": "node --test painel/server.test.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
