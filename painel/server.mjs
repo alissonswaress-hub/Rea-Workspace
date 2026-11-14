@@ -10,6 +10,7 @@ import { unpackBaseApk } from './apk-bundle.mjs';
 import { lookupPlayStore, normalizePlayLink } from './playstore.mjs';
 import { generateProject, readProject, projectFile, packageProject, deleteGeneratedProject, deleteAllGeneratedProjects } from './generator.mjs';
 import { prepareMission, listMissions } from './copilot-bridge.mjs';
+import { copilotVersion, runCopilotMission, parsePreviewPath, previewFile } from './copilot-runner.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -17,7 +18,7 @@ const STATIC = path.join(HERE, 'public');
 const MAX_FILE_BYTES = 12 * 1024 * 1024;
 const MAX_BODY_BYTES = 17 * 1024 * 1024;
 const MAX_APK_BYTES = 160 * 1024 * 1024;
-const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnostico', 'erro-analise', 'erro-funcao', 'android-diagnostico', 'android-pacote', 'android-classes', 'android-arquivos', 'android-instalacao', 'erro-android-instalacao', 'erro-android-diagnostico', 'erro-android-pacote', 'erro-android-classes']);
+const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnostico', 'erro-analise', 'erro-funcao', 'android-diagnostico', 'android-pacote', 'android-classes', 'android-arquivos', 'android-instalacao', 'erro-android-instalacao', 'erro-android-diagnostico', 'erro-android-pacote', 'erro-android-classes', 'copilot-resposta', 'erro-copilot-resposta']);
 const MIME = { '/': 'text/html; charset=utf-8', '/styles.css': 'text/css; charset=utf-8', '/app.js': 'text/javascript; charset=utf-8', '/manifest.webmanifest': 'application/manifest+json; charset=utf-8', '/icon.svg': 'image/svg+xml', '/sw.js': 'text/javascript; charset=utf-8', '/offline.html': 'text/html; charset=utf-8' };
 const GENERATED_MIME = { 'index.html':'text/html; charset=utf-8', 'app.js':'text/javascript; charset=utf-8', 'styles.css':'text/css; charset=utf-8', 'config.json':'application/json; charset=utf-8', 'manifest.webmanifest':'application/manifest+json', 'icon.svg':'image/svg+xml', 'sw.js':'text/javascript; charset=utf-8' };
 const STATIC_PATH = { '/': 'index.html', '/styles.css': 'styles.css', '/app.js': 'app.js', '/manifest.webmanifest': 'manifest.webmanifest', '/icon.svg': 'icon.svg', '/sw.js': 'sw.js', '/offline.html': 'offline.html' };
@@ -156,7 +157,19 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
       await persist(job);
       let target;
 
-      if (requestData.mode === 'setup') {
+      if (requestData.mode === 'copilot') {
+        job.step='Executando Copilot Agent em pasta isolada';
+        await persist(job);
+        const availability=await copilotVersion(runner);
+        if(!availability.installed)throw Error('Copilot CLI não instalado. Execute npm install -g @github/copilot e copilot login no Codespace.');
+        const created=await runCopilotMission({
+          missionsDir:copilotMissionsDir,id:requestData.missionId,runner,timeout:720000
+        });
+        job.previewId=created.id;
+        await saveReport(job,'copilot-resposta',JSON.stringify({message:created.summary,previewId:created.id},null,2));
+        job.step='Aplicativo gerado e JavaScript validado. Abra a prévia na porta 4174';
+        job.status='concluido';
+      } else if (requestData.mode === 'setup') {
         job.step = 'Preparando Java e JADX no Codespace';
         await persist(job);
         await call(job, 'bash', [path.join(root, 'scripts/preparar-rea-android.sh')], 'android-instalacao', 600000);
@@ -340,6 +353,26 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
           return json(res,error.code==='ENOENT'?404:400,{error:cleanString(error.message,300)});
         }
       }
+      if (req.method === 'GET' && pathname === '/api/copilot/status') {
+        const installed=await copilotVersion(runner);
+        return json(res,200,{...installed,requiresLogin:true,notes:'Copilot CLI precisa ser autenticado separadamente do Copilot Chat no VS Code. Pode consumir créditos da sua conta.'});
+      }
+      if (req.method === 'POST' && pathname === '/api/copilot/execute') {
+        if(running)return json(res,409,{error:'Existe uma operação em andamento. Aguarde a conclusão.'});
+        const body=await readBody(req);
+        if(body?.confirm!==true)return json(res,400,{error:'Confirme explicitamente a execução do Copilot e possível uso de créditos.'});
+        const missions=await listMissions(copilotMissionsDir);
+        const selected=missions.find(m=>m.id===body?.missionId);
+        if(!selected)return json(res,404,{error:'Missão não encontrada. Prepare uma missão primeiro.'});
+        const job={
+          id:randomUUID(),filename:'Copilot: '+selected.name,mode:'copilot',missionId:selected.id,
+          status:'iniciando',step:'Aguardando Copilot CLI',symbol:'',
+          createdAt:new Date().toISOString(),finishedAt:null,error:'',warning:'',reports:[]
+        };
+        running=true;jobs.set(job.id,job);
+        void runJob(job,{mode:'copilot',missionId:selected.id});
+        return json(res,202,{id:job.id});
+      }
       if (req.method === 'GET' && pathname === '/api/copilot/missions') {
         return json(res,200,{missions:await listMissions(copilotMissionsDir)});
       }
@@ -519,13 +552,33 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
     }
   });
 
-  return { server, secret, ready };
+  const previewServer=http.createServer(async(req,res)=>{
+    res.setHeader('X-Content-Type-Options','nosniff');
+    res.setHeader('Referrer-Policy','no-referrer');
+    res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
+    try{
+      if(req.method!=='GET')return json(res,405,{error:'Método não permitido.'});
+      const pathname=new URL(req.url||'/','http://localhost').pathname;
+      const target=parsePreviewPath(pathname);
+      if(!target)return json(res,404,{error:'Abra um projeto gerado pelo Copilot usando o link correto.'});
+      const data=await previewFile(copilotMissionsDir,target.id,target.name);
+      res.writeHead(200,{'Content-Type':target.type,'Cache-Control':'no-store'});
+      res.end(data);
+    }catch(error){
+      return json(res,error.code==='ENOENT'?404:400,{error:'Arquivo de prévia não disponível.'});
+    }
+  });
+
+  return { server, previewServer, secret, ready };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const app = createApp({ secret: process.env.REA_HUB_TOKEN || await getPersistentSecret() });
   await app.ready;
   const port = Number(process.env.PORT || 3000);
+  app.previewServer.listen(Number(process.env.COPILOT_PREVIEW_PORT || 4174),'0.0.0.0',()=>{
+    console.log('Prévia isolada do Copilot: porta 4174 (MANTER PRIVATE).');
+  });
   app.server.listen(port, '0.0.0.0', () => {
     console.log('\n============================================');
     console.log('   REA HUB | Central de analise');
