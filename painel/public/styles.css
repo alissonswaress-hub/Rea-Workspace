@@ -159,3 +159,14 @@ footer{display:flex;justify-content:space-between;gap:20px;padding:35px 0;font-s
   .copilot-panel .generated-actions{display:flex;flex-direction:column}
   .copilot-panel .generated-actions>*{min-height:50px;width:100%}
 }
+
+/* Gerador real opcional usando Copilot CLI, com confirmacao de creditos */
+.copilot-cli-box{border:1px solid #5f547c;background:linear-gradient(150deg,#292439,#1a2130);border-radius:15px;padding:16px;margin:20px 0}
+.copilot-cli-box>strong{font-size:15px;display:block;color:#e3dbff}
+.copilot-cli-box>.field-note{margin:8px 0 13px}
+.copilot-cli-commands{background:#131824;border:1px solid #4e5369;border-radius:11px;padding:12px;margin:13px 0}
+.copilot-cli-commands code{display:block;white-space:pre-wrap;overflow-wrap:anywhere;background:#0b1019;border-radius:8px;padding:12px;color:#c9f9dc;font-size:12px;line-height:1.6;margin:8px 0}
+.copilot-cli-box #copilot-cli-check,.copilot-cli-box #copilot-run,.copilot-cli-box #copilot-built-preview{display:flex;align-items:center;justify-content:center;text-align:center;width:100%;min-height:46px;margin:9px 0}
+.copilot-cli-box #copilot-run{margin-top:12px}
+#copilot-run-feedback{line-height:1.6}
+@media(max-width:600px){.copilot-cli-box{padding:13px}}
