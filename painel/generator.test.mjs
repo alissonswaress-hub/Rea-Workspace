@@ -102,5 +102,56 @@ test('REA Hub gera, serve prévia com sessão privada e baixa ZIP somente após 
   assert.equal(invalid.status,400);
   const result=await fetch(base+'/api/generate',{method:'POST',headers,
     body:JSON.stringify({mode:'public',name:'Meu Treino',kind:'treinos',storeUrl:'https://play.google.com/store/apps/details?id=app.befit'})});
-  assert.equal(result.status,201,await result.text().catch(()=>'')); // status already read only if fails? result.text consumes response
+  assert.equal(result.status,201);
+  const created=(await result.json()).project;
+  assert.equal(created.kind,'treinos');
+  assert.equal(created.source.kind,'descrição-pública');
+  assert.equal(created.name,'Meu Treino');
+  const direct=await fetch(base+created.preview);
+  assert.equal(direct.status,401,'A prévia é privada');
+  const previewCookie=(result.headers.get('set-cookie')||'').split(';')[0];
+  assert.match(previewCookie,/rea-preview=/);
+  const preview=await fetch(base+created.preview,{headers:{cookie:previewCookie}});
+  assert.equal(preview.status,200);
+  assert.match(await preview.text(),/Meu Treino/);
+  const script=await fetch(base+created.preview+'app.js',{headers:{cookie:previewCookie}});
+  assert.equal(script.status,200);
+  assert.match(await script.text(),/sessions/);
+  const listing=await (await fetch(base+'/api/projects',{headers})).json();
+  assert.ok(listing.projects.some(x=>x.id===created.id));
+  const zipped=await fetch(base+'/api/projects/'+created.id+'/zip',{headers});
+  assert.equal(zipped.status,200);
+  assert.match(zipped.headers.get('content-type'),/application\/zip/);
+  const bytes=Buffer.from(await zipped.arrayBuffer());
+  assert.equal(bytes.readUInt32LE(0),0x04034b50);
+
+  const upload=await fetch(base+'/api/android-upload',{
+    method:'POST',
+    headers:{'x-rea-token':'testing-secret','x-rea-filename':'app.befit.apk'},
+    body:Buffer.from([0x50,0x4b,0x03,0x04,0,0,0,0])
+  });
+  assert.equal(upload.status,202);
+  const jobId=(await upload.json()).id;
+  let job;
+  for(let i=0;i<100;i++){
+    const jobs=(await (await fetch(base+'/api/jobs',{headers})).json()).jobs;
+    job=jobs.find(x=>x.id===jobId);
+    if(job?.status==='concluido'||job?.status==='erro')break;
+    await new Promise(resolve=>setTimeout(resolve,15));
+  }
+  assert.equal(job?.status,'concluido',job?.error);
+  assert.ok(job.reports.includes('android-pacote'));
+  const built=await fetch(base+'/api/generate',{
+    method:'POST',headers,
+    body:JSON.stringify({mode:'analysis',jobId,name:'Meu Treino Próprio',kind:'auto'})
+  });
+  assert.equal(built.status,201);
+  const generated=(await built.json()).project;
+  assert.equal(generated.kind,'treinos');
+  assert.equal(generated.source.kind,'análise-estática-apk');
+  assert.equal(generated.source.packageId,'app.befit');
+  assert.notEqual(generated.id,created.id);
+  const logoff=await fetch(base+'/api/logout',{method:'POST',headers});
+  assert.equal(logoff.status,200);
+  assert.match(logoff.headers.get('set-cookie')||'',/Max-Age=0/);
 });
