@@ -1,7 +1,7 @@
 /* REA Hub - interface local. Nenhum serviço externo ou CDN. */
 const $ = (selector) => document.querySelector(selector);
 const state = { token: sessionStorage.getItem('rea-hub-key') || localStorage.getItem('rea-hub-key') || '', mode: 'store', jobs: [], job: null, storeInfo: null, builderMode: '', builderJobId: '', generatedProject: null, copilotTask: null, currentReport: '', reportText: '', timer: null };
-const labels = { diagnostico: 'Diagnóstico do Hopper', analise: 'Análise do programa', funcao: 'Detalhes da função', 'erro-analise': 'Log de erros da análise', 'erro-funcao': 'Log de erros da função', 'erro-diagnostico': 'Log do diagnóstico', 'android-diagnostico': 'Diagnóstico do JADX', 'android-pacote': 'Estrutura e manifesto do aplicativo', 'android-arquivos': 'Arquivos APK dentro do ZIP', 'android-instalacao': 'Preparação do Android', 'erro-android-instalacao': 'Erro na preparação do Android', 'android-classes': 'Classes de entrada (MainActivity)', 'erro-android-diagnostico': 'Erro no diagnóstico JADX', 'erro-android-pacote': 'Erro na inspeção do APK', 'erro-android-classes': 'Erro na busca de classes' };
+const labels = { diagnostico: 'Diagnóstico do Hopper', analise: 'Análise do programa', funcao: 'Detalhes da função', 'erro-analise': 'Log de erros da análise', 'erro-funcao': 'Log de erros da função', 'erro-diagnostico': 'Log do diagnóstico', 'android-diagnostico': 'Diagnóstico do JADX', 'android-pacote': 'Estrutura e manifesto do aplicativo', 'android-arquivos': 'Arquivos APK dentro do ZIP', 'android-instalacao': 'Preparação do Android', 'erro-android-instalacao': 'Erro na preparação do Android', 'android-classes': 'Classes de entrada (MainActivity)', 'erro-android-diagnostico': 'Erro no diagnóstico JADX', 'erro-android-pacote': 'Erro na inspeção do APK', 'erro-android-classes': 'Erro na busca de classes', 'copilot-resposta': 'Resultado do Copilot Agent', 'erro-copilot-resposta': 'Erro do Copilot Agent' };
 
 async function api(path, { method = 'GET', data = null, raw = false } = {}) {
   const response = await fetch('/api/' + path, {
@@ -222,7 +222,10 @@ function showCopilotTask(task) {
   $('#copilot-ready').classList.remove('hidden');
   $('#copilot-task-path').textContent=task.missionPath;
   $('#copilot-prompt').value=task.prompt;
-  $('#copilot-feedback').textContent='Missão privada salva. Abra o Copilot Agent no Codespace para programar o aplicativo.';
+  $('#copilot-feedback').textContent='Missão salva. Use a IA automaticamente ou envie a tarefa ao Agent do Copilot no Codespace.';
+  $('#copilot-run').disabled=!copilotInstalled;
+  $('#copilot-built-preview').classList.add('hidden');
+  $('#copilot-preview-note').classList.add('hidden');
 }
 async function loadCopilotMissions(){
   if(!state.token)return;
@@ -279,6 +282,55 @@ async function copyCopilotTask() {
   $('#copilot-feedback').textContent='Copiado. Cole no chat do Copilot em modo Agent, no Codespace.';
 }
 
+
+let copilotInstalled=false;
+function previewUrl(id){
+  const hostname=location.hostname;
+  const match=hostname.match(/^(.*)-3000\.app\.github\.dev$/i);
+  if(match)return location.protocol+'//'+match[1]+'-4174.app.github.dev/'+id+'/';
+  if(['localhost','127.0.0.1'].includes(hostname))return location.protocol+'//'+hostname+':4174/'+id+'/';
+  return null;
+}
+function showAgentPreview(job){
+  if(job?.mode!=='copilot'||job?.status!=='concluido'||!job.previewId)return;
+  const url=previewUrl(job.previewId);
+  $('#copilot-run-feedback').textContent='Aplicativo criado pela IA e JavaScript validado. '+(url?'Abra a prévia abaixo.':'Abra a porta privada 4174 na aba Portas do Codespace.');
+  const open=$('#copilot-built-preview');
+  open.classList.toggle('hidden',!url);
+  $('#copilot-preview-note').classList.remove('hidden');
+  if(url)open.href=url;
+}
+async function checkCopilotCli(){
+  $('#copilot-cli-status').textContent='Verificando Copilot CLI neste Codespace...';
+  try{
+    const found=await api('copilot/status');
+    copilotInstalled=found.installed===true;
+    $('#copilot-cli-status').textContent=copilotInstalled
+      ? '✓ Copilot CLI instalado ('+found.version+'). É necessário ter uma sessão de login válida.'
+      : 'Copilot CLI ainda não instalado. Execute o comando de ativação no notebook uma única vez.';
+    $('#copilot-cli-guide').classList.toggle('hidden',copilotInstalled);
+    $('#copilot-run').disabled=!copilotInstalled||!state.copilotTask;
+  } catch(error) {
+    copilotInstalled=false;
+    $('#copilot-cli-status').textContent='Falha ao verificar Copilot: '+error.message;
+    $('#copilot-run').disabled=true;
+  }
+}
+async function runCopilotCli(){
+  const task=state.copilotTask;
+  if(!task || !copilotInstalled)return;
+  if(!confirm('O Copilot CLI poderá consumir créditos da sua conta. Ele receberá a missão preparada e criará arquivos em uma pasta isolada do Codespace. Iniciar a geração pela IA?'))return;
+  $('#copilot-run').disabled=true;
+  $('#copilot-run-feedback').textContent='Iniciando Copilot. Acompanhe o status em Acompanhamento.';
+  try{
+    const response=await api('copilot/execute',{method:'POST',data:{missionId:task.id,confirm:true}});
+    state.job={id:response.id};
+    await refreshJobs();
+    $('#title-status').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(error){$('#copilot-run-feedback').textContent='Não foi possível iniciar: '+error.message;}
+  finally{$('#copilot-run').disabled=false;}
+}
+
 async function prepareAndroid() {
   if (!confirm('Instalar Java e JADX para analisar APKs neste Codespace? Pode baixar pacotes e consumir recursos do Codespaces.')) return;
   $('#btn-setup-android').disabled = true;
@@ -304,8 +356,8 @@ function summaryText(job) {
 }
 function updateSteps(job) {
   const steps = [...document.querySelectorAll('#job-steps li')];
-  steps[1].querySelector('div').childNodes[0].textContent = job?.mode === 'android' || job?.mode === 'setup' ? 'Configuração do Android' : 'Diagnóstico do Hopper';
-  steps[2].querySelector('div').childNodes[0].textContent = job?.mode === 'android' ? 'Inspeção do APK Android' : job?.mode === 'setup' ? 'Verificação do JADX' : 'Análise com o REA';
+  steps[1].querySelector('div').childNodes[0].textContent = job?.mode === 'copilot' ? 'Preparação do Copilot' : job?.mode === 'android' || job?.mode === 'setup' ? 'Configuração do Android' : 'Diagnóstico do Hopper';
+  steps[2].querySelector('div').childNodes[0].textContent = job?.mode === 'copilot' ? 'Programação com IA' : job?.mode === 'android' ? 'Inspeção do APK Android' : job?.mode === 'setup' ? 'Verificação do JADX' : 'Análise com o REA';
   const status = job?.status || 'aguardando';
   let active = 0;
   if (job) {
@@ -349,7 +401,7 @@ function renderHistory() {
     const strong = document.createElement('strong');
     strong.textContent = job.filename;
     const small = document.createElement('small');
-    small.textContent = niceDate(job.createdAt) + ' · ' + (job.mode === 'demo' ? 'Programa de exemplo' : job.mode === 'android' ? 'APK Android' : job.mode === 'setup' ? 'Preparar análise Android' : 'Arquivo enviado');
+    small.textContent = niceDate(job.createdAt) + ' · ' + (job.mode === 'demo' ? 'Programa de exemplo' : job.mode === 'android' ? 'APK Android' : job.mode === 'setup' ? 'Preparar análise Android' : job.mode === 'copilot' ? 'IA programando' : 'Arquivo enviado');
     info.append(strong, small);
     const status = document.createElement('span');
     status.className = 'history-status' + (job.status === 'erro' ? ' bad' : '');
@@ -372,6 +424,11 @@ async function refreshJobs() {
       if (reportsChanged) await renderReports(current);
     } else updateSteps(null);
     renderHistory();
+    if(state.job?.mode==='copilot') {
+      if(state.job.status==='concluido')showAgentPreview(state.job);
+      else if(state.job.status==='erro')$('#copilot-run-feedback').textContent='Copilot não concluiu: '+(state.job.error||'Verifique o relatório.');
+      else $('#copilot-run-feedback').textContent='Copilot: '+state.job.step;
+    }
   } catch (error) {
     if (error.message.includes('Chave')) showLogin();
     else $('#job-message').textContent = 'Falha ao atualizar: ' + error.message;
@@ -503,6 +560,7 @@ $('#login-form').addEventListener('submit', async (event) => {
     await refreshJobs();
     await loadGeneratedProjects();
     await loadCopilotMissions();
+    await checkCopilotCli();
   } catch (error) {
     state.token = '';
     $('#login-error').textContent = error.message;
@@ -522,6 +580,8 @@ $('#store-next').addEventListener('click', () => setMode('android'));
 $('#copilot-form').addEventListener('submit',prepareCopilotMission);
 $('#copilot-source').addEventListener('change',copilotSourceNote);
 $('#copilot-copy').addEventListener('click',copyCopilotTask);
+$('#copilot-cli-check').addEventListener('click',checkCopilotCli);
+$('#copilot-run').addEventListener('click',runCopilotCli);
 $('#store-build').addEventListener('click',()=>{setBuilderSource('public');$('#builder-panel').scrollIntoView({behavior:'smooth',block:'start'});});
 $('#btn-go-builder').addEventListener('click',()=>{setBuilderSource('analysis');$('#builder-panel').scrollIntoView({behavior:'smooth',block:'start'});});
 $('#builder-form').addEventListener('submit',buildProject);
@@ -571,5 +631,6 @@ if (state.token) {
   void refreshJobs();
   void loadGeneratedProjects();
   void loadCopilotMissions();
+  void checkCopilotCli();
 } else showLogin();
 state.timer = setInterval(() => { if (state.token) void refreshJobs(); }, 2500);
