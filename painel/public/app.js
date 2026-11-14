@@ -1,7 +1,7 @@
 /* REA Hub - interface local. Nenhum serviço externo ou CDN. */
 const $ = (selector) => document.querySelector(selector);
 const state = { token: sessionStorage.getItem('rea-hub-key') || '', mode: 'demo', jobs: [], job: null, currentReport: '', reportText: '', timer: null };
-const labels = { diagnostico: 'Diagnóstico do Hopper', analise: 'Análise do programa', funcao: 'Detalhes da função', 'erro-analise': 'Log de erros da análise', 'erro-funcao': 'Log de erros da função', 'erro-diagnostico': 'Log do diagnóstico' };
+const labels = { diagnostico: 'Diagnóstico do Hopper', analise: 'Análise do programa', funcao: 'Detalhes da função', 'erro-analise': 'Log de erros da análise', 'erro-funcao': 'Log de erros da função', 'erro-diagnostico': 'Log do diagnóstico', 'android-diagnostico': 'Diagnóstico do JADX', 'android-pacote': 'Estrutura e manifesto do aplicativo', 'android-classes': 'Classes de entrada (MainActivity)', 'erro-android-diagnostico': 'Erro no diagnóstico JADX', 'erro-android-pacote': 'Erro na inspeção do APK', 'erro-android-classes': 'Erro na busca de classes' };
 
 async function api(path, { method = 'GET', data = null, raw = false } = {}) {
   const response = await fetch('/api/' + path, {
@@ -31,6 +31,7 @@ async function health() {
     const result = await api('health');
     tag($('#pill-rea'), result.rea);
     tag($('#pill-hopper'), result.hopper);
+    tag($('#pill-jadx'), result.jadx);
   } catch (error) {
     if (error.message.includes('Chave')) showLogin();
   }
@@ -42,9 +43,18 @@ function setMode(mode) {
   $('#demo-area').classList.toggle('hidden', !demo);
   $('#upload-area').classList.toggle('hidden', demo);
   $('#mode-demo').classList.toggle('selected', demo);
-  $('#mode-upload').classList.toggle('selected', !demo);
+  $('#mode-upload').classList.toggle('selected', mode === 'upload');
+  $('#mode-android').classList.toggle('selected', mode === 'android');
   $('#mode-demo').setAttribute('aria-pressed', String(demo));
-  $('#mode-upload').setAttribute('aria-pressed', String(!demo));
+  $('#mode-upload').setAttribute('aria-pressed', String(mode === 'upload'));
+  $('#mode-android').setAttribute('aria-pressed', String(mode === 'android'));
+  $('#symbol-area').classList.toggle('hidden', mode === 'android');
+  $('#android-tip').classList.toggle('hidden', mode !== 'android');
+  $('#binary-file').accept = mode === 'android' ? '.apk,application/vnd.android.package-archive' : '';
+  $('#upload-title').textContent = mode === 'android' ? 'Escolher APK Android' : 'Escolher arquivo para analisar';
+  $('#upload-description').textContent = mode === 'android' ? 'Arquivo APK instalado legitimamente ou recebido com autorização' : 'ELF, EXE, DLL, Mach-O e outros arquivos suportados pelo REA';
+  $('#upload-limit').textContent = mode === 'android' ? 'Até 160 MB. O APK será analisado sem ser executado.' : 'Até 12 MB. O arquivo nunca é executado pelo painel.';
+  $('#binary-file').value = '';
   $('#symbol').value = demo ? 'calcular_total' : '';
 }
 function niceDate(date) {
@@ -60,11 +70,13 @@ function summaryText(job) {
 }
 function updateSteps(job) {
   const steps = [...document.querySelectorAll('#job-steps li')];
+  steps[1].querySelector('div').childNodes[0].textContent = job?.mode === 'android' ? 'Diagnóstico do JADX' : 'Diagnóstico do Hopper';
+  steps[2].querySelector('div').childNodes[0].textContent = job?.mode === 'android' ? 'Inspeção do APK Android' : 'Análise com o REA';
   const status = job?.status || 'aguardando';
   let active = 0;
   if (job) {
     if (/Diagnost/.test(job.step)) active = 1;
-    else if (/Analisando|Inspecionando/.test(job.step)) active = 2;
+    else if (/Analisando|Inspecionando|Buscando/.test(job.step)) active = 2;
     else if (status === 'concluido') active = 3;
     else if (status === 'erro') active = 2;
   }
@@ -99,7 +111,7 @@ function renderHistory() {
     const strong = document.createElement('strong');
     strong.textContent = job.filename;
     const small = document.createElement('small');
-    small.textContent = niceDate(job.createdAt) + ' · ' + (job.mode === 'demo' ? 'Programa de exemplo' : 'Arquivo enviado');
+    small.textContent = niceDate(job.createdAt) + ' · ' + (job.mode === 'demo' ? 'Programa de exemplo' : job.mode === 'android' ? 'APK Android' : 'Arquivo enviado');
     info.append(strong, small);
     const status = document.createElement('span');
     status.className = 'history-status' + (job.status === 'erro' ? ' bad' : '');
@@ -184,6 +196,21 @@ async function begin() {
   $('#job-message').textContent = 'Preparando análise...';
   try {
     const data = { mode: state.mode, symbol: $('#symbol').value.trim() };
+    if (state.mode === 'android') {
+      const file = $('#binary-file').files[0];
+      if (!file) throw new Error('Selecione o arquivo APK Android.');
+      if (!file.name.toLowerCase().endsWith('.apk')) throw new Error('Selecione um arquivo .apk.');
+      if (file.size > 160 * 1024 * 1024) throw new Error('O APK ultrapassa 160 MB.');
+      const response = await fetch('/api/android-upload', {
+        method: 'POST', headers: { 'X-REA-Token': state.token, 'X-REA-Filename': encodeURIComponent(file.name) }, body: file, cache: 'no-store'
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Falha ao enviar APK.');
+      state.job = { id: result.id };
+      await refreshJobs();
+      $('#title-status').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     if (state.mode === 'upload') {
       const file = $('#binary-file').files[0];
       if (!file) throw new Error('Selecione um arquivo para analisar.');
@@ -245,6 +272,7 @@ $('#btn-lock').addEventListener('click', () => {
 });
 $('#mode-demo').addEventListener('click', () => setMode('demo'));
 $('#mode-upload').addEventListener('click', () => setMode('upload'));
+$('#mode-android').addEventListener('click', () => setMode('android'));
 $('#binary-file').addEventListener('change', () => {
   $('#upload-title').textContent = $('#binary-file').files[0]?.name || 'Escolher arquivo para analisar';
 });
