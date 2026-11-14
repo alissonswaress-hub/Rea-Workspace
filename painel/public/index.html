@@ -129,8 +129,37 @@
               <p class="field-note">O prompt para IA é copiado para a área de transferência. Revise os dados antes de compartilhá-los com terceiros.</p>
             </div>
           </section>
+          <section class="panel copilot-panel" id="copilot-panel" aria-labelledby="copilot-title">
+            <div class="panel-top"><div><span class="section-kicker">04 / INTELIGÊNCIA ARTIFICIAL</span><h2 id="copilot-title">Desenvolver com Copilot</h2></div><span class="builder-icon" aria-hidden="true">✦</span></div>
+            <p class="field-note">Conectamos o trabalho do REA ao <b>Copilot Agent do seu Codespace</b>. Ele poderá criar código real e testar seus fluxos após você iniciar a missão no painel de chat do VS Code. Isso substitui os modelos genéricos.</p>
+            <div class="builder-source" id="copilot-source-note">Use o link da loja para uma referência inicial ou selecione uma análise de APK concluída para usar evidências técnicas reais.</div>
+            <form id="copilot-form">
+              <label for="copilot-source" class="field-label">Referência para desenvolvimento</label>
+              <select id="copilot-source" class="text-field">
+                <option value="public">Link da Play Store (somente dados públicos)</option>
+                <option value="analysis">APK analisado pelo REA / JADX</option>
+              </select>
+              <label for="copilot-name" class="field-label">Nome do nosso aplicativo</label>
+              <input id="copilot-name" class="text-field" type="text" required minlength="3" maxlength="64" value="FitNova" placeholder="Ex.: FitNova">
+              <label for="copilot-requirements" class="field-label">O que o aplicativo precisa fazer?</label>
+              <textarea id="copilot-requirements" class="text-field builder-description" rows="6" required minlength="15" maxlength="1500">Criar um app de musculação completo e original: perfil com objetivo e nível, montagem e edição de fichas semanais, catálogo pesquisável de exercícios, registro de séries, pesos e repetições e gráficos de evolução. Design profissional, rápido no celular, com dados persistidos. Botões e fluxos devem funcionar. Quero uma implementação útil, não uma simples demonstração visual.</textarea>
+              <button type="submit" id="btn-copilot-prepare" class="btn-primary">✦ Preparar projeto para o Copilot</button>
+            </form>
+            <p id="copilot-feedback" class="field-note" role="status" aria-live="polite">A tarefa será salva localmente no Codespace, fora dos commits públicos do GitHub.</p>
+            <div id="copilot-ready" class="hidden">
+              <div class="generated-success"><span class="generated-check">✓</span><div><strong>Missão preparada</strong><p class="field-note">Agora é o Copilot Agent que escreve o aplicativo, não os modelos antigos.</p></div></div>
+              <div class="field-label">Tarefa no Codespace</div>
+              <div class="copilot-task-path" id="copilot-task-path"></div>
+              <div class="field-label">Mensagem pronta para o Copilot</div>
+              <textarea id="copilot-prompt" class="text-field builder-description copilot-prompt" readonly rows="5"></textarea>
+              <div class="generated-actions"><button type="button" id="copilot-copy" class="btn-primary">Copiar e levar ao Copilot</button><a href="https://github.com/codespaces" class="btn-secondary" target="_blank" rel="noopener noreferrer">Abrir meu Codespace</a></div>
+              <p class="field-note"><b>No notebook:</b> abra o Chat do Copilot à direita, selecione <b>Agent</b> ou <b>reconstrutor-rea</b>, cole a mensagem e envie. Revise/aprove as alterações e os testes propostos. A IA só terá acesso ao resumo preparado quando você decidir usar a missão.</p>
+              <p class="field-note">Se tiver apenas um link da Play Store, o Copilot não conhece o código ou todas as telas do aplicativo. Envie prints e defina os fluxos importantes para melhorar a fidelidade funcional.</p>
+            </div>
+            <div id="copilot-history" class="copilot-history"></div>
+          </section>
           <section class="panel builder-panel" id="builder-panel" aria-labelledby="builder-title">
-            <div class="panel-top"><div><span class="section-kicker">04 / CONSTRUIR</span><h2 id="builder-title">Protótipos de teste</h2></div><span class="builder-icon" aria-hidden="true">✦</span></div>
+            <div class="panel-top"><div><span class="section-kicker">05 / LEGADO</span><h2 id="builder-title">Protótipos de teste</h2></div><span class="builder-icon" aria-hidden="true">✦</span></div>
             <p class="field-note">AVISO: este gerador ainda usa modelos prontos de treino, agenda ou loja. Ele NÃO recria o app analisado nem melhora suas funcionalidades automaticamente. Não use esses protótipos como produto final. Para reconstruir funcionalidades com fidelidade, precisamos de análise real do APK, telas de referência e um agente de programação.</p>
             <div id="builder-source" class="builder-source">Primeiro analise um APK ou identifique o aplicativo pelo link da Play Store.</div>
             <form id="builder-form">
