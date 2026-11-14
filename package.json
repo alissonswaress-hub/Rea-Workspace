@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node painel/server.mjs",
-    "test": "node --test painel/server.test.mjs"
+    "test": "node --test painel/server.test.mjs",
+    "treino": "node projetos/treinolab/server.mjs",
+    "test:treino": "node --test projetos/treinolab/server.test.mjs"
   },
   "engines": {
     "node": ">=24"
