@@ -184,3 +184,36 @@ export async function packageProject(generatedDir,id){
   for(const filename of proj.files)files[filename]=await fs.readFile(path.join(generatedDir,id,filename),'utf8');
   return {project:proj,zip:zipFiles(files)};
 }
+
+
+/* Apaga SOMENTE rascunhos gerados pelo painel.
+ * Nao remove APKs, relatorios, templates, codigo versionado nem outros repositorios.
+ */
+export async function deleteGeneratedProject(generatedDir,id) {
+  if(!validId(id)) throw Error('Identificador de projeto inválido.');
+  const root=await fs.realpath(generatedDir);
+  const dir=path.join(root,id);
+  const lstat=await fs.lstat(dir);
+  if(!lstat.isDirectory()||lstat.isSymbolicLink())throw Error('Pasta de projeto inválida.');
+  const project=await readProject(root,id);
+  const marker=await fs.lstat(path.join(dir,'project.json'));
+  if(!marker.isFile()||marker.isSymbolicLink())throw Error('Marcador de projeto inválido.');
+  const names=await fs.readdir(dir);
+  const allowed=new Set([...FILES,'project.json']);
+  if(names.some(name=>!allowed.has(name)))throw Error('O projeto possui arquivos desconhecidos. Exclusão bloqueada.');
+  await fs.rm(dir,{recursive:true,force:false});
+  return {id,name:project.name,deleted:true};
+}
+
+export async function deleteAllGeneratedProjects(generatedDir) {
+  try { await fs.access(generatedDir); }
+  catch(error) { if(error.code==='ENOENT')return {deleted:[],failed:[]}; throw error; }
+  const entries=await fs.readdir(generatedDir,{withFileTypes:true});
+  const ids=entries.filter(e=>e.isDirectory() && validId(e.name)).map(e=>e.name);
+  const deleted=[],failed=[];
+  for(const id of ids){
+    try {deleted.push(await deleteGeneratedProject(generatedDir,id));}
+    catch {failed.push(id);}
+  }
+  return {deleted,failed};
+}
