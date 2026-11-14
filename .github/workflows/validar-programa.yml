@@ -1,0 +1,33 @@
+name: Validar programa de teste
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "exemplos/loja_demo.c"
+      - "scripts/testar-rea-hopper.sh"
+      - ".github/workflows/validar-programa.yml"
+
+jobs:
+  testar-compilacao:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compilar programa de exemplo
+        run: |
+          mkdir -p build
+          gcc -std=c11 -O0 -g -fno-inline -fno-omit-frame-pointer -o build/loja_demo exemplos/loja_demo.c
+      - name: Executar e conferir resultados
+        run: |
+          set -euo pipefail
+          saida="$(./build/loja_demo)"
+          echo "$saida"
+          test "$saida" = "total_centavos=4050 lucro_centavos=1950"
+      - name: Confirmar simbolos para o REA
+        run: |
+          nm -C build/loja_demo | grep ' calcular_total$'
+          nm -C build/loja_demo | grep ' aplicar_desconto$'
+          nm -C build/loja_demo | grep ' calcular_lucro$'
+      - name: Verificar sintaxe do script de REA
+        run: bash -n scripts/testar-rea-hopper.sh
