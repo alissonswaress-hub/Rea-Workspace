@@ -7,5 +7,14 @@
     }
   },
   "postCreateCommand": "npm install --global rea-agents@6.9.0",
-  "remoteUser": "vscode"
+  "remoteUser": "vscode",
+  "forwardPorts": [
+    3000
+  ],
+  "portsAttributes": {
+    "3000": {
+      "label": "REA Hub (painel privado)",
+      "onAutoForward": "notify"
+    }
+  }
 }
