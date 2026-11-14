@@ -1,6 +1,5 @@
 import http from 'node:http';
 import path from 'node:path';
-import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { promises as fs, constants as fsConstants, createWriteStream } from 'node:fs';
@@ -20,7 +19,7 @@ const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnost
 const MIME = { '/': 'text/html; charset=utf-8', '/styles.css': 'text/css; charset=utf-8', '/app.js': 'text/javascript; charset=utf-8', '/manifest.webmanifest': 'application/manifest+json; charset=utf-8', '/icon.svg': 'image/svg+xml', '/sw.js': 'text/javascript; charset=utf-8', '/offline.html': 'text/html; charset=utf-8' };
 const STATIC_PATH = { '/': 'index.html', '/styles.css': 'styles.css', '/app.js': 'app.js', '/manifest.webmanifest': 'manifest.webmanifest', '/icon.svg': 'icon.svg', '/sw.js': 'sw.js', '/offline.html': 'offline.html' };
 
-export async function getPersistentSecret(location = process.env.REA_HUB_SECRET_FILE || path.join(os.homedir(), '.local', 'share', 'rea-hub', 'secret')) {
+export async function getPersistentSecret(location = process.env.REA_HUB_SECRET_FILE || path.join(ROOT, '.rea-private', 'secret')) {
   await fs.mkdir(path.dirname(location), { recursive: true, mode: 0o700 });
   try {
     const existing = (await fs.readFile(location, 'utf8')).trim();
