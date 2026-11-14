@@ -18,6 +18,23 @@ Ambiente dedicado ao **REA (Reverse Engineer Anything)**, separado dos demais pr
 
 > **Importante:** salvar os arquivos neste repositório não instala o REA na sua conta do GitHub nem conecta automaticamente o REA a esta conversa. A instalação acontece no Codespace, e o registro MCP depende do agente escolhido.
 
+## Primeiro teste real (REA + Hopper)
+
+O repositório contém um exemplo original, `exemplos/loja_demo.c`, com funções de vendas, desconto e lucro. Um teste automático no GitHub Actions verifica se o programa compila, executa e conserva nomes de funções. **A análise Hopper roda no Codespace, não no GitHub Actions**, pois Hopper está instalado no seu ambiente.
+
+No **terminal do Codespace existente**, execute apenas:
+
+```bash
+git pull --ff-only && bash scripts/testar-rea-hopper.sh
+```
+
+O script compila o exemplo em `build/`, verifica a saída, chama `rea doctor --provider hopper --json`, tenta analisar o binário com `rea analyze --provider hopper --json` e solicita o dossiê da função `calcular_total` com `rea function`.
+
+- Sucesso: a última linha informa **TESTE COMPLETO**.
+- Se o Hopper falhar ao iniciar, consulte `results/analise-hopper-erro.txt`. O `doctor` saudável verifica o caminho e os pré-requisitos, mas não substitui uma análise real.
+- Os resultados ficam em `results/` e não são enviados ao GitHub pelo script.
+- Para novo Codespace, a instalação do Hopper pode precisar ser repetida; a configuração do `.bashrc` não é compartilhada automaticamente entre contêineres.
+
 ## Corrigir falha do Hopper no Codespaces (novembro de 2026)
 
 No Codespaces, pode ocorrer `authorization_or_package_manager_failed` com `exit ENOENT`, embora `sudo` e `apt-get` existam. O REA pode tentar uma ferramenta de autorização gráfica indisponível no contêiner. O erro **não comprova** que essa é a causa; confira o comando que falhou no relatório.
