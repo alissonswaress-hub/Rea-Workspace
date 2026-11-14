@@ -2,6 +2,20 @@
 
 Ambiente dedicado ao **REA (Reverse Engineer Anything)**, separado dos demais projetos.
 
+## Projeto independente inspirado em apps de treino: TreinoLab
+
+Além do laboratório REA, este repositório agora contém o **TreinoLab**, um aplicativo demonstrativo próprio de treinos, disponível em projetos/treinolab. Ele **não é uma cópia do Befit**, mas utiliza as funcionalidades públicas da categoria como referência: fichas, exercícios, registro de carga e acompanhamento de progresso.
+
+No **Codespace já existente**, abra um novo terminal e execute:
+
+~~~bash
+git pull --ff-only && npm run treino
+~~~
+
+Na aba **Portas**, clique na porta **4173** e selecione **Abrir no navegador**. Mantenha a porta **Private**. O REA Hub da porta 3000 continua separado.
+
+O TreinoLab funciona sem conta, com dados locais do navegador, e não deve ser usado como serviço de produção sem banco de dados, autenticação e revisão de segurança. Para documentação e funcionalidades, consulte [README TreinoLab](projetos/treinolab/README.md).
+
 ## REA Hub: painel visual (celular e computador)
 
 Este repositório agora inclui uma central para analisar arquivos com **REA + Hopper** pelo navegador, sem editar comandos toda vez. O painel roda **dentro do seu GitHub Codespace**, não é um site público de produção. Ele não faz upload de binários para o GitHub e não executa arquivos que você enviar.
