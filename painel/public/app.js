@@ -1,6 +1,6 @@
 /* REA Hub - interface local. Nenhum serviço externo ou CDN. */
 const $ = (selector) => document.querySelector(selector);
-const state = { token: sessionStorage.getItem('rea-hub-key') || '', mode: 'store', jobs: [], job: null, currentReport: '', reportText: '', timer: null };
+const state = { token: sessionStorage.getItem('rea-hub-key') || localStorage.getItem('rea-hub-key') || '', mode: 'store', jobs: [], job: null, currentReport: '', reportText: '', timer: null };
 const labels = { diagnostico: 'Diagnóstico do Hopper', analise: 'Análise do programa', funcao: 'Detalhes da função', 'erro-analise': 'Log de erros da análise', 'erro-funcao': 'Log de erros da função', 'erro-diagnostico': 'Log do diagnóstico', 'android-diagnostico': 'Diagnóstico do JADX', 'android-pacote': 'Estrutura e manifesto do aplicativo', 'android-arquivos': 'Arquivos APK dentro do ZIP', 'android-instalacao': 'Preparação do Android', 'erro-android-instalacao': 'Erro na preparação do Android', 'android-classes': 'Classes de entrada (MainActivity)', 'erro-android-diagnostico': 'Erro no diagnóstico JADX', 'erro-android-pacote': 'Erro na inspeção do APK', 'erro-android-classes': 'Erro na busca de classes' };
 
 async function api(path, { method = 'GET', data = null, raw = false } = {}) {
@@ -16,6 +16,11 @@ async function api(path, { method = 'GET', data = null, raw = false } = {}) {
   return payload;
 }
 
+function forgetLogin() {
+  state.token = '';
+  sessionStorage.removeItem('rea-hub-key');
+  localStorage.removeItem('rea-hub-key');
+}
 function showLogin() {
   $('#login-overlay').classList.remove('hidden');
   $('#access-token').focus();
@@ -33,7 +38,7 @@ async function health() {
     tag($('#pill-hopper'), result.hopper);
     tag($('#pill-jadx'), result.jadx);
   } catch (error) {
-    if (error.message.includes('Chave')) showLogin();
+    if (error.message.includes('Chave')) { forgetLogin(); showLogin(); }
   }
 }
 
@@ -283,6 +288,8 @@ $('#login-form').addEventListener('submit', async (event) => {
   try {
     await api('health');
     sessionStorage.setItem('rea-hub-key', candidate);
+    if ($('#remember-phone').checked) localStorage.setItem('rea-hub-key', candidate);
+    else localStorage.removeItem('rea-hub-key');
     $('#access-token').value = '';
     hideLogin();
     await health();
@@ -294,7 +301,7 @@ $('#login-form').addEventListener('submit', async (event) => {
 });
 $('#btn-lock').addEventListener('click', () => {
   state.token = ''; state.jobs = []; state.job = null;
-  sessionStorage.removeItem('rea-hub-key');
+  forgetLogin();
   showLogin();
 });
 $('#mode-store').addEventListener('click', () => setMode('store'));
@@ -317,7 +324,29 @@ $('#btn-prompt').addEventListener('click', () => {
   void copyValue(prompt);
 });
 
-setMode('store');
+let installPrompt = null;
+const showMobileHelp = () => {
+  const message = 'Para abrir o REA Hub com um toque no Android:\n\n1. Abra esta página no Chrome.\n2. Toque nos três pontos (⋮) do Chrome.\n3. Selecione “Adicionar à tela inicial” ou “Instalar app”.\n4. Confirme o nome REA Hub.\n\nSe o Codespace estiver pausado, inicie-o em github.com/codespaces e volte ao ícone.';
+  alert(message);
+};
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault();
+  installPrompt = event;
+  $('#btn-install').textContent = 'Instalar REA Hub';
+});
+$('#btn-install').addEventListener('click', async () => {
+  if (installPrompt) {
+    await installPrompt.prompt();
+    installPrompt = null;
+    $('#btn-install').textContent = 'Ver como instalar';
+  } else showMobileHelp();
+});
+$('#btn-mobile-help').addEventListener('click', showMobileHelp);
+if ('serviceWorker' in navigator) window.addEventListener('load', () => {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+});
+const params = new URLSearchParams(location.search);
+setMode(params.get('abrir') === 'android' ? 'android' : 'store');
 if (state.token) {
   hideLogin();
   void health();
