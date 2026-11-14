@@ -67,10 +67,10 @@ for _ in 1 2 3 4 5 6 7; do
     else
       echo "Abra Codespaces > Portas > 3000 > Abrir no navegador."
     fi
-    if [[ "${1:-}" == "--upgrade" && -r "$HOME/.local/share/rea-hub/secret" ]]; then
-      echo "SENHA PRIVADA (guarde somente no seu aparelho): $(cat "$HOME/.local/share/rea-hub/secret")"
+    if [[ "${1:-}" == "--upgrade" && -r "$ROOT/.rea-private/secret" ]]; then
+      echo "SENHA PRIVADA (guarde somente no seu aparelho): $(cat "$ROOT/.rea-private/secret")"
     fi
-    echo "Para consultar a senha privada no Codespace: cat ~/.local/share/rea-hub/secret"
+    echo "Para consultar a senha privada no Codespace: cat .rea-private/secret"
     echo "Adicione esse endereco a tela inicial do celular e mantenha a porta PRIVATE."
     exit 0
   fi
