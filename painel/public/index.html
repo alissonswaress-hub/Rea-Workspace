@@ -66,7 +66,7 @@
               <p id="store-package" class="small muted"></p>
               <p id="store-desc" class="small"></p>
               <p class="small muted">Esta é apenas uma identificação pela página pública, não uma engenharia reversa do aplicativo.</p>
-              <button type="button" class="btn-secondary" id="store-next">Tenho o APK / ZIP. Analisar arquivo →</button>
+              <div class="store-action-row"><button type="button" class="btn-secondary" id="store-next">Tenho o APK / ZIP. Analisar arquivo →</button><button type="button" class="btn-primary" id="store-build">Criar meu app a partir dessa referência ↗</button></div>
             </div>
             <div class="export-guide">
               <strong>Como obter o arquivo pelo próprio celular</strong>
@@ -115,7 +115,7 @@
               <li class="step"><span>03</span><div>Análise com o REA<small>Inspeciona o programa</small></div></li>
               <li class="step"><span>04</span><div>Relatórios<small>Visualização e exportação</small></div></li>
             </ol>
-            <div id="job-message" role="status" aria-live="polite" class="job-message">Selecione um arquivo para começar.</div>
+            <div id="job-message" role="status" aria-live="polite" class="job-message">Selecione um arquivo para começar.</div><button id="btn-go-builder" type="button" class="btn-primary hidden" style="width:100%;margin-top:15px">✦ Criar meu app com esta análise →</button>
           </section>
 
           <section class="panel results-panel" aria-labelledby="title-results">
@@ -127,6 +127,38 @@
               <div class="report-actions"><button id="btn-copy" class="btn-secondary" type="button">Copiar</button><button id="btn-download" class="btn-secondary" type="button">Baixar</button><button id="btn-prompt" class="btn-secondary" type="button">Prompt para IA</button></div>
               <pre id="report-text" tabindex="0" aria-label="Conteúdo do relatório">Selecione um relatório.</pre>
               <p class="field-note">O prompt para IA é copiado para a área de transferência. Revise os dados antes de compartilhá-los com terceiros.</p>
+            </div>
+          </section>
+          <section class="panel builder-panel" id="builder-panel" aria-labelledby="builder-title">
+            <div class="panel-top"><div><span class="section-kicker">04 / CONSTRUIR</span><h2 id="builder-title">Criar meu aplicativo</h2></div><span class="builder-icon" aria-hidden="true">✦</span></div>
+            <p class="field-note">Depois de analisar um APK, gere um projeto ORIGINAL, editável e funcional. Também é possível começar com a referência pública, sem afirmar que houve engenharia reversa.</p>
+            <div id="builder-source" class="builder-source">Primeiro analise um APK ou identifique o aplicativo pelo link da Play Store.</div>
+            <form id="builder-form">
+              <label class="field-label" for="builder-name">Nome do seu aplicativo</label>
+              <input id="builder-name" class="text-field" type="text" maxlength="64" minlength="3" required value="Meu Treino" placeholder="Ex.: Meu Treino">
+              <label class="field-label" for="builder-kind">Tipo de aplicativo</label>
+              <select id="builder-kind" class="text-field">
+                <option value="auto">Identificar automaticamente</option>
+                <option value="treinos">Treinos e fitness</option>
+                <option value="agendamentos">Agendamentos e serviços</option>
+                <option value="catalogo">Loja e catálogo</option>
+                <option value="tarefas">Tarefas e organização</option>
+                <option value="geral">Base geral</option>
+              </select>
+              <label class="field-label" for="builder-description">O que você quer que o app faça? <span>(opcional)</span></label>
+              <textarea id="builder-description" class="text-field builder-description" maxlength="400" rows="3" placeholder="Ex.: montar fichas, registrar cargas e mostrar meu progresso."></textarea>
+              <button id="btn-build-app" type="submit" class="btn-primary" disabled>✦ Criar meu app</button>
+            </form>
+            <div id="builder-feedback" class="field-note" role="status" aria-live="polite">Aguardando referência ou análise concluída.</div>
+            <div id="generated-view" class="hidden">
+              <div class="generated-success">
+                <span class="generated-check">✓</span>
+                <div><strong id="generated-name">Aplicativo criado</strong><p id="generated-feature" class="field-note"></p></div>
+              </div>
+              <p class="field-note"><b>Versão inicial:</b> funciona pelo navegador e guarda dados locais. Não contém login, banco de dados em nuvem nem uma cópia do aplicativo original.</p>
+              <div class="generated-actions"><a id="generated-preview" class="btn-primary" href="#" target="_blank" rel="noopener">↗ Abrir prévia</a><button id="generated-download" type="button" class="btn-secondary">↓ Baixar projeto ZIP</button></div>
+              <iframe id="generated-frame" title="Prévia do aplicativo original criado" loading="lazy" sandbox="allow-scripts allow-same-origin allow-forms" referrerpolicy="no-referrer"></iframe>
+              <p class="field-note">O ZIP inclui código-fonte editável e um README com o que foi construído e os limites da análise.</p>
             </div>
           </section>
         </aside>
