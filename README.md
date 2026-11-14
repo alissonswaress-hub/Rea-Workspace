@@ -1,46 +1,21 @@
-## Limpeza de projetos experimentais e qualidade do construtor
+## Nova integração: REA + Copilot Agent (programação com IA)
 
-O gerador atual de "Criar meu app" foi identificado como **apenas um conjunto de modelos genéricos**. Não lê o código e as telas do aplicativo a ponto de reconstruir um produto similar. A interface agora informa claramente essa limitação; estes modelos não devem ser vendidos como clones.
+O **REA Hub** agora usa o GitHub Copilot de duas formas: pelo **Agent no VS Code** (que já aparece no Codespace) ou pela **CLI**, que permite gerar código a partir do celular depois de instalar e autenticar uma vez. O Copilot escreve código próprio, em vez de reaproveitar o antigo template genérico.
 
-**Apagar os testes gerados sem mexer no laboratório:**
+**Para atualizar o laboratório no Codespace existente:**
 
-1. No Codespace existente, atualize o painel:
-   \`git pull --ff-only && bash scripts/rea-hub-mobile.sh --upgrade\`
-2. No celular, abra o REA Hub, entre na seção **04 / CONSTRUIR → Protótipos de teste**.
-3. Em **Rascunhos de teste**, escolha **Apagar** num projeto ou **Apagar todos os testes**. Confirme a exclusão.
-
-Somente os diretórios de projetos gerados por este painel em \`results/gerados/<uuid>/\` são removidos. A exclusão **não afeta** REA, Hopper, JADX, os pacotes recebidos em \`targets/\`, relatórios de \`results/painel/\`, nem o código versionado em \`projetos/treinolab\`. Não é possível desfazer a exclusão.
-
-**Para chegar a um app similar de verdade:** é preciso o APK analisado, um mapa das telas e fluxos do aplicativo de referência, um PRD próprio, um agente de programação conectado/autorizado e testes. A análise estática isolada não entrega essas etapas. Não ative agentes com acesso irrestrito a arquivos privados e não copie código ou recursos protegidos sem autorização.
-
----
-
-## ✦ Nova função: criar um aplicativo depois da análise
-
-O REA Hub agora contém a etapa **04 / CONSTRUIR → Criar meu aplicativo**.
-
-**Caminho A, com engenharia reversa real:** após analisar um APK com JADX, abra o relatório concluído e toque em **Criar meu app com esta análise**. Escolha um nome próprio, a categoria e as funcionalidades desejadas e clique em **Criar meu app**.
-
-**Caminho B, só com link da Play Store:** cole o link, toque em **Identificar aplicativo**, depois em **Criar meu app a partir dessa referência**. Isso gera um app original usando a **descrição pública**, sem fingir que o APK foi analisado.
-
-**Resultado:** o REA Hub gera código-fonte editável para uma PWA, exibe a **prévia funcionando na mesma página**, permite **Abrir prévia** e **Baixar projeto ZIP**. Os projetos ficam listados e são guardados localmente no Codespace em `results/gerados/` (fora do Git).
-
-Modelos funcionais atualmente disponíveis:
-- **Treinos e fitness:** fichas, biblioteca inicial de exercícios, registro de séries/cargas e histórico/gráfico.
-- **Agendamentos:** cadastro de horários locais, com checagem de conflito no mesmo horário.
-- **Loja e catálogo:** produtos de demonstração editáveis, carrinho e cópia de pedido.
-- **Tarefas:** lista interativa.
-- **Outros:** base inicial para organizar informações.
-
-**Limite essencial:** é um gerador de **MVPs originais por modelos locais**, não um agente de IA integrado nem um clonador automático de código proprietário. O arquivo de saída é um projeto **web/PWA**, não um APK compilado. Nenhum servidor, modelo de IA remoto, assinatura, dados privados ou aparência protegida do aplicativo original é reproduzido automaticamente. Os resultados da análise são referência, não a fonte de código do novo app.
-
-Para atualizar o painel que você já instalou no Codespaces, rode **uma vez** no terminal:
-
-```bash
+~~~bash
 git pull --ff-only && bash scripts/rea-hub-mobile.sh --upgrade
-```
+~~~
 
-Depois atualize o ícone/página **REA Hub** no celular. Mantenha a porta 3000 **PRIVATE**.
+Entre no REA Hub, identifique um aplicativo ou analise o APK, e abra **04 / INTELIGÊNCIA ARTIFICIAL → Desenvolver com Copilot**. Escolha nome e funcionalidades; clique em **Preparar projeto para o Copilot**. Em seguida:
+
+- **No notebook:** copie a tarefa e envie para o **Copilot Agent** que já aparece à direita no Codespace. O agente especializado reconstrutor-rea está incluído no repositório.
+- **No celular, após ativar CLI:** execute uma única vez no Codespace **npm install -g @github/copilot && copilot login**. Depois use **IA: construir aplicativo agora** no REA Hub, com confirmação de consumo de créditos. A prévia abre na porta **4174, PRIVATE**.
+
+A programação automática requer autenticação e créditos de GitHub Copilot. Os testes de integração usam mocks, pois **a execução real na sua conta ainda depende dessa ativação**. O aplicativo produzido será um projeto original e revisável, não uma cópia exata do APK. Veja [guia REA + Copilot](docs/REA-COPILOT.md).
+
+O antigo gerador por modelos foi **desativado na interface**. A seção **05 / LIMPEZA** permite excluir os rascunhos antigos sem apagar REA, Hopper, JADX nem relatórios.
 
 ## Abrir REA Hub direto pelo celular
 
