@@ -223,7 +223,7 @@ function showCopilotTask(task) {
   $('#copilot-task-path').textContent=task.missionPath;
   $('#copilot-prompt').value=task.prompt;
   $('#copilot-feedback').textContent='Missão salva. Use a IA automaticamente ou envie a tarefa ao Agent do Copilot no Codespace.';
-  $('#copilot-run').disabled=!copilotInstalled;
+  $('#copilot-run').disabled=!copilotInstalled||copilotPolicyBlocked;
   $('#copilot-built-preview').classList.add('hidden');
   $('#copilot-preview-note').classList.add('hidden');
 }
@@ -284,6 +284,7 @@ async function copyCopilotTask() {
 
 
 let copilotInstalled=false;
+let copilotPolicyBlocked=false;
 function previewUrl(id){
   const hostname=location.hostname;
   const match=hostname.match(/^(.*)-3000\.app\.github\.dev$/i);
@@ -305,11 +306,15 @@ async function checkCopilotCli(){
   try{
     const found=await api('copilot/status');
     copilotInstalled=found.installed===true;
-    $('#copilot-cli-status').textContent=copilotInstalled
-      ? '✓ Copilot CLI instalado ('+found.version+'). É necessário ter uma sessão de login válida.'
-      : 'Copilot CLI ainda não instalado. Execute o comando de ativação no notebook uma única vez.';
+    copilotPolicyBlocked=found.policyBlocked===true;
+    $('#copilot-cli-status').textContent=copilotPolicyBlocked
+      ? '⚠ Copilot CLI instalado, mas o GitHub negou a execução por política da conta/organização.'
+      : copilotInstalled
+        ? '✓ Copilot CLI instalado ('+found.version+'). Isso não garante que a conta tenha permissão para executar.'
+        : 'Copilot CLI ainda não instalado. Execute o comando de ativação no notebook uma única vez.';
     $('#copilot-cli-guide').classList.toggle('hidden',copilotInstalled);
-    $('#copilot-run').disabled=!copilotInstalled||!state.copilotTask;
+    $('#copilot-policy-help').classList.toggle('hidden',!copilotPolicyBlocked);
+    $('#copilot-run').disabled=!copilotInstalled||copilotPolicyBlocked||!state.copilotTask;
   } catch(error) {
     copilotInstalled=false;
     $('#copilot-cli-status').textContent='Falha ao verificar Copilot: '+error.message;
@@ -318,7 +323,7 @@ async function checkCopilotCli(){
 }
 async function runCopilotCli(){
   const task=state.copilotTask;
-  if(!task || !copilotInstalled)return;
+  if(!task || !copilotInstalled || copilotPolicyBlocked)return;
   if(!confirm('O Copilot CLI poderá consumir créditos da sua conta. Ele receberá a missão preparada e criará arquivos em uma pasta isolada do Codespace. Iniciar a geração pela IA?'))return;
   $('#copilot-run').disabled=true;
   $('#copilot-run-feedback').textContent='Iniciando Copilot. Acompanhe o status em Acompanhamento.';
@@ -426,7 +431,18 @@ async function refreshJobs() {
     renderHistory();
     if(state.job?.mode==='copilot') {
       if(state.job.status==='concluido')showAgentPreview(state.job);
-      else if(state.job.status==='erro')$('#copilot-run-feedback').textContent='Copilot não concluiu: '+(state.job.error||'Verifique o relatório.');
+      else if(state.job.status==='erro') {
+        const blocked=state.job.issue==='copilot_policy_denied'||/Access denied by policy settings|policy setting may be preventing access|negou o acesso ao Copilot CLI/i.test(state.job.error||'');
+        if(blocked){
+          copilotPolicyBlocked=true;
+          $('#copilot-policy-help').classList.remove('hidden');
+          $('#copilot-cli-status').textContent='⚠ O GitHub bloqueou o Copilot CLI. Verifique suas configurações de acesso.';
+          $('#copilot-run').disabled=true;
+        }
+        $('#copilot-run-feedback').textContent=blocked
+          ? 'O GitHub bloqueou o Copilot CLI por política/licença. Veja as opções acima; sua missão continua salva para o Copilot Agent do notebook.'
+          : 'Copilot não concluiu: '+(state.job.error||'Verifique o relatório.');
+      }
       else $('#copilot-run-feedback').textContent='Copilot: '+state.job.step;
     }
   } catch (error) {
@@ -581,6 +597,12 @@ $('#copilot-form').addEventListener('submit',prepareCopilotMission);
 $('#copilot-source').addEventListener('change',copilotSourceNote);
 $('#copilot-copy').addEventListener('click',copyCopilotTask);
 $('#copilot-cli-check').addEventListener('click',checkCopilotCli);
+$('#copilot-policy-retry').addEventListener('click',()=>{
+  copilotPolicyBlocked=false;
+  $('#copilot-policy-help').classList.add('hidden');
+  $('#copilot-cli-status').textContent='Você confirmou que ajustou o acesso no GitHub. Pode fazer uma nova tentativa, sujeita à política da conta.';
+  $('#copilot-run').disabled=!copilotInstalled||!state.copilotTask;
+});
 $('#copilot-run').addEventListener('click',runCopilotCli);
 $('#store-build').addEventListener('click',()=>{$('#copilot-source').value='public';copilotSourceNote();$('#copilot-panel').scrollIntoView({behavior:'smooth',block:'start'});});
 $('#btn-go-builder').addEventListener('click',()=>{$('#copilot-source').value='analysis';copilotSourceNote();$('#copilot-panel').scrollIntoView({behavior:'smooth',block:'start'});});
