@@ -14,6 +14,7 @@ test('Painel REA: acesso protegido, exemplo e upload analisados sem executar upl
   async function fakeRunner(command, args) {
     calls.push({ command, args });
     if (command === 'gcc') return { ok: true, code: 0, stdout: '', stderr: '' };
+    if (command === 'bash') return { ok: true, code: 0, stdout: 'JADX preparado', stderr: '' };
     if (command.includes('demo-')) return { ok: true, code: 0, stdout: 'total_centavos=4050 lucro_centavos=1950\n', stderr: '' };
     if (command === 'rea') {
       if (args[0] === '--version') return { ok: true, code: 0, stdout: 'rea 6.9.0', stderr: '' };
@@ -26,7 +27,7 @@ test('Painel REA: acesso protegido, exemplo e upload analisados sem executar upl
     return { ok: false, code: 1, stdout: '', stderr: 'Comando inesperado' };
   }
 
-  const app = createApp({ secret: 'minha-chave-de-teste', root, runner: fakeRunner });
+  const app = createApp({ secret: 'minha-chave-de-teste', root, runner: fakeRunner, storeLookup: async url => ({ packageId: 'app.befit', url, title: 'Befit', analyzedApk: false }) });
   await app.ready;
   app.server.listen(0, '127.0.0.1');
   await once(app.server, 'listening');
@@ -83,6 +84,21 @@ test('Painel REA: acesso protegido, exemplo e upload analisados sem executar upl
   assert.equal(binary.status, 'concluido', binary.error);
   assert.equal(binary.filename, 'usuario.exe');
 
+  const linkResponse = await fetch(base + '/api/playstore', {
+    method: 'POST', headers,
+    body: JSON.stringify({ url: 'https://play.google.com/store/apps/details?id=app.befit' })
+  });
+  assert.equal(linkResponse.status, 200);
+  const linkResult = await linkResponse.json();
+  assert.equal(linkResult.packageId, 'app.befit');
+  assert.equal(linkResult.analyzedApk, false);
+  const setupResponse = await fetch(base + '/api/android-setup', { method: 'POST', headers });
+  assert.equal(setupResponse.status, 202);
+  const setupJob = await waitUntilFinished((await setupResponse.json()).id);
+  assert.equal(setupJob.status, 'concluido', setupJob.error);
+  assert.ok(setupJob.reports.includes('android-instalacao'));
+  assert.ok(calls.some(row => row.command === 'bash'));
+
   const forbiddenAndroid = await fetch(base + '/api/android-upload', { method: 'POST', body: Buffer.from([0x50,0x4b,0x03,0x04]), headers: { 'x-rea-filename': 'befit.apk' } });
   assert.equal(forbiddenAndroid.status, 401);
   const wrongType = await fetch(base + '/api/android-upload', { method: 'POST', body: 'not-an-apk', headers: { ...headers, 'x-rea-filename': 'arquivo.exe' } });
@@ -103,7 +119,7 @@ test('Painel REA: acesso protegido, exemplo e upload analisados sem executar upl
   assert.ok(calls.some(item => item.command === 'rea' && item.args[0] === 'inspect-android-package'));
   assert.equal(calls.filter(item => item.command.endsWith('befit.apk')).length, 0, 'Um APK enviado nao pode ser executado.');
 
-  const receivedUploads = calls.filter(item => item.command !== 'rea' && item.command !== 'gcc' && !item.command.includes('demo-'));
+  const receivedUploads = calls.filter(item => item.command !== 'rea' && item.command !== 'gcc' && item.command !== 'bash' && !item.command.includes('demo-'));
   assert.equal(receivedUploads.length, 0, 'Um binário enviado pelo usuário não pode ser executado.');
   const analysisCalls = calls.filter(item => item.command === 'rea' && item.args[0] === 'analyze');
   assert.equal(analysisCalls.length, 2);
