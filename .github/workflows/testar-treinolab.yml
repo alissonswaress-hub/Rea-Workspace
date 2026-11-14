@@ -25,4 +25,4 @@ jobs:
       - name: Testar o servidor do aplicativo
         run: npm run test:treino
       - name: Validar metadados PWA
-        run: node -e 'const m=require("./projetos/treinolab/manifest.webmanifest"); console.log(m.name)'
+        run: node -e 'const m=JSON.parse(require("node:fs").readFileSync("projetos/treinolab/manifest.webmanifest","utf8")); console.log(m.name)'
