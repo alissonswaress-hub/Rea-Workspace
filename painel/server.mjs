@@ -1,5 +1,6 @@
 import http from 'node:http';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { promises as fs, constants as fsConstants, createWriteStream } from 'node:fs';
@@ -16,8 +17,29 @@ const MAX_FILE_BYTES = 12 * 1024 * 1024;
 const MAX_BODY_BYTES = 17 * 1024 * 1024;
 const MAX_APK_BYTES = 160 * 1024 * 1024;
 const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnostico', 'erro-analise', 'erro-funcao', 'android-diagnostico', 'android-pacote', 'android-classes', 'android-arquivos', 'android-instalacao', 'erro-android-instalacao', 'erro-android-diagnostico', 'erro-android-pacote', 'erro-android-classes']);
-const MIME = { '/': 'text/html; charset=utf-8', '/styles.css': 'text/css; charset=utf-8', '/app.js': 'text/javascript; charset=utf-8' };
-const STATIC_PATH = { '/': 'index.html', '/styles.css': 'styles.css', '/app.js': 'app.js' };
+const MIME = { '/': 'text/html; charset=utf-8', '/styles.css': 'text/css; charset=utf-8', '/app.js': 'text/javascript; charset=utf-8', '/manifest.webmanifest': 'application/manifest+json; charset=utf-8', '/icon.svg': 'image/svg+xml', '/sw.js': 'text/javascript; charset=utf-8', '/offline.html': 'text/html; charset=utf-8' };
+const STATIC_PATH = { '/': 'index.html', '/styles.css': 'styles.css', '/app.js': 'app.js', '/manifest.webmanifest': 'manifest.webmanifest', '/icon.svg': 'icon.svg', '/sw.js': 'sw.js', '/offline.html': 'offline.html' };
+
+export async function getPersistentSecret(location = process.env.REA_HUB_SECRET_FILE || path.join(os.homedir(), '.local', 'share', 'rea-hub', 'secret')) {
+  await fs.mkdir(path.dirname(location), { recursive: true, mode: 0o700 });
+  try {
+    const existing = (await fs.readFile(location, 'utf8')).trim();
+    if (!/^[0-9a-f]{48,128}$/i.test(existing)) throw new Error('Chave persistente inválida. Revise o arquivo privado.');
+    return existing;
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+  const generated = randomBytes(32).toString('hex');
+  try {
+    await fs.writeFile(location, generated + '\n', { flag: 'wx', mode: 0o600 });
+    return generated;
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error;
+    const existing = (await fs.readFile(location, 'utf8')).trim();
+    if (!/^[0-9a-f]{48,128}$/i.test(existing)) throw new Error('Chave privada persistida é inválida.');
+    return existing;
+  }
+}
 
 function cleanString(value, length = 100) {
   return String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, length);
@@ -239,7 +261,7 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
       await ready;
       if (req.method === 'GET' && STATIC_PATH[pathname]) {
         const data = await fs.readFile(path.join(STATIC, STATIC_PATH[pathname]));
-        res.writeHead(200, { 'Content-Type': MIME[pathname], 'Cache-Control': 'no-store' });
+        res.writeHead(200, { 'Content-Type': MIME[pathname], 'Cache-Control': pathname === '/sw.js' || pathname === '/manifest.webmanifest' ? 'no-cache' : 'no-store' });
         res.end(data);
         return;
       }
@@ -361,7 +383,7 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const app = createApp({ secret: process.env.REA_HUB_TOKEN || randomBytes(18).toString('hex') });
+  const app = createApp({ secret: process.env.REA_HUB_TOKEN || await getPersistentSecret() });
   await app.ready;
   const port = Number(process.env.PORT || 3000);
   app.server.listen(port, '0.0.0.0', () => {
@@ -369,8 +391,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log('   REA HUB | Central de analise');
     console.log('============================================');
     console.log('Porta: ' + port + ' (abra em Codespaces > Portas)');
-    console.log('SENHA TEMPORARIA: ' + app.secret);
-    console.log('Nao compartilhe esta chave. Nao torne a porta publica.');
+    console.log('SENHA PRIVADA (somente no primeiro acesso neste celular): ' + app.secret);
+    console.log('Senha preservada entre reinicios do mesmo Codespace. Nao publique a porta.');
     console.log('============================================\n');
   });
 }
