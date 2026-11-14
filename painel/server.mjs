@@ -257,8 +257,12 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
       }
     } catch (error) {
       job.status = 'erro';
-      job.step = 'Falha durante a análise';
-      job.error = cleanString(error.message, 1500);
+      const policyBlocked = job.mode === 'copilot' && (error.code === 'COPILOT_POLICY_DENIED' || /Access denied by policy settings|Copilot CLI policy setting may be preventing access/i.test(error.message));
+      job.issue = policyBlocked ? 'copilot_policy_denied' : '';
+      job.step = policyBlocked ? 'Acesso bloqueado pela política do GitHub' : 'Falha durante a análise';
+      job.error = policyBlocked
+        ? 'O GitHub negou o acesso ao Copilot CLI por política ou licença. Consulte https://github.com/settings/copilot. Você ainda pode enviar sua missão ao Copilot Agent no Codespace, se esse recurso estiver disponível.'
+        : cleanString(error.message, 1500);
     } finally {
       job.finishedAt = new Date().toISOString();
       try { await persist(job); } catch (error) { console.error('Falha ao salvar histórico:', error.message); }
@@ -355,7 +359,16 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
       }
       if (req.method === 'GET' && pathname === '/api/copilot/status') {
         const installed=await copilotVersion(runner);
-        return json(res,200,{...installed,requiresLogin:true,notes:'Copilot CLI precisa ser autenticado separadamente do Copilot Chat no VS Code. Pode consumir créditos da sua conta.'});
+        const failures=[...jobs.values()].filter(item=>item.mode==='copilot'&&item.status==='erro'&&
+          (item.issue==='copilot_policy_denied'||/Access denied by policy settings|Copilot CLI policy setting may be preventing access/i.test(item.error||'')));
+        const lastPolicyFailure=failures.sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0]||null;
+        const latestSuccess=[...jobs.values()].filter(item=>item.mode==='copilot'&&item.status==='concluido')
+          .sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0]||null;
+        const blocked=!!lastPolicyFailure && (!latestSuccess||lastPolicyFailure.createdAt>latestSuccess.createdAt);
+        return json(res,200,{...installed,policyBlocked:blocked,
+          settingsUrl:'https://github.com/settings/copilot',requiresLogin:true,
+          notes:blocked?'Copilot CLI instalado, mas o GitHub negou acesso por política/licença. Use o Copilot Agent no Codespace enquanto verifica as configurações.':
+            'O comando de versão confirma instalação, não permissão de execução; é necessário conta habilitada e créditos disponíveis.'});
       }
       if (req.method === 'POST' && pathname === '/api/copilot/execute') {
         if(running)return json(res,409,{error:'Existe uma operação em andamento. Aguarde a conclusão.'});
