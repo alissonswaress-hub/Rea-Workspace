@@ -34,7 +34,7 @@
       <section class="hero">
         <div class="eyebrow"><span class="eyedot"></span> LABORATÓRIO PARTICULAR DE ANÁLISE</div>
         <h1>Engenharia reversa,<br><em>sem complicação.</em></h1>
-        <p>Selecione um programa e o REA trabalha com o Hopper. Você acompanha as etapas e consulta os relatórios aqui mesmo.</p>
+        <p>Analise APKs e programas com REA, Hopper e JADX. Depois use o GitHub Copilot para desenvolver seu próprio aplicativo, com código original e testes.</p>
         <div class="hero-points">
           <span>◈ Análise local</span><span>◈ Relatórios organizados</span><span>◈ Sem enviar código ao GitHub</span>
         </div>
@@ -66,7 +66,7 @@
               <p id="store-package" class="small muted"></p>
               <p id="store-desc" class="small"></p>
               <p class="small muted">Esta é apenas uma identificação pela página pública, não uma engenharia reversa do aplicativo.</p>
-              <div class="store-action-row"><button type="button" class="btn-secondary" id="store-next">Tenho o APK / ZIP. Analisar arquivo →</button><button type="button" class="btn-primary" id="store-build">Gerar modelo básico (experimental) ↗</button></div>
+              <div class="store-action-row"><button type="button" class="btn-secondary" id="store-next">Tenho o APK / ZIP. Analisar arquivo →</button><button type="button" class="btn-primary" id="store-build">Desenvolver com Copilot ↗</button></div>
             </div>
             <div class="export-guide">
               <strong>Como obter o arquivo pelo próprio celular</strong>
@@ -115,7 +115,7 @@
               <li class="step"><span>03</span><div>Análise com o REA<small>Inspeciona o programa</small></div></li>
               <li class="step"><span>04</span><div>Relatórios<small>Visualização e exportação</small></div></li>
             </ol>
-            <div id="job-message" role="status" aria-live="polite" class="job-message">Selecione um arquivo para começar.</div><button id="btn-go-builder" type="button" class="btn-primary hidden" style="width:100%;margin-top:15px">✦ Gerar protótipo básico (experimental) →</button>
+            <div id="job-message" role="status" aria-live="polite" class="job-message">Selecione um arquivo para começar.</div><button id="btn-go-builder" type="button" class="btn-primary hidden" style="width:100%;margin-top:15px">✦ Desenvolver aplicativo com Copilot →</button>
           </section>
 
           <section class="panel results-panel" aria-labelledby="title-results">
@@ -174,10 +174,10 @@
             <div id="copilot-history" class="copilot-history"></div>
           </section>
           <section class="panel builder-panel" id="builder-panel" aria-labelledby="builder-title">
-            <div class="panel-top"><div><span class="section-kicker">05 / LEGADO</span><h2 id="builder-title">Protótipos de teste</h2></div><span class="builder-icon" aria-hidden="true">✦</span></div>
-            <p class="field-note">AVISO: este gerador ainda usa modelos prontos de treino, agenda ou loja. Ele NÃO recria o app analisado nem melhora suas funcionalidades automaticamente. Não use esses protótipos como produto final. Para reconstruir funcionalidades com fidelidade, precisamos de análise real do APK, telas de referência e um agente de programação.</p>
-            <div id="builder-source" class="builder-source">Primeiro analise um APK ou identifique o aplicativo pelo link da Play Store.</div>
-            <form id="builder-form">
+            <div class="panel-top"><div><span class="section-kicker">05 / LIMPEZA</span><h2 id="builder-title">Rascunhos antigos</h2></div><span class="builder-icon" aria-hidden="true">✦</span></div>
+            <p class="field-note">O gerador antigo de modelos genéricos foi desativado. Use <b>Desenvolver com Copilot</b> acima para criar aplicativos com IA. Aqui você ainda pode apagar os rascunhos gerados anteriormente.</p>
+            <div id="builder-source" class="builder-source hidden">Primeiro analise um APK ou identifique o aplicativo pelo link da Play Store.</div>
+            <form id="builder-form" class="hidden">
               <label class="field-label" for="builder-name">Nome do seu aplicativo</label>
               <input id="builder-name" class="text-field" type="text" maxlength="64" minlength="3" required value="Meu Treino" placeholder="Ex.: Meu Treino">
               <label class="field-label" for="builder-kind">Tipo de aplicativo</label>
