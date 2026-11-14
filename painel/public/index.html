@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b0b12">
+  <meta name="description" content="Central privada para análise de arquivos com REA e Hopper no GitHub Codespaces.">
+  <title>REA Hub | Central de Análise</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="logo" href="/" aria-label="REA Hub início">
+        <span class="logo-mark" aria-hidden="true"><span>R</span></span>
+        <span>REA<span class="accent"> HUB</span><small>WORKSPACE</small></span>
+      </a>
+      <div class="top-controls">
+        <span class="pill" id="pill-rea"><span class="dot"></span> REA</span>
+        <span class="pill" id="pill-hopper"><span class="dot"></span> Hopper</span>
+        <button type="button" class="icon-btn" id="btn-lock" aria-label="Bloquear painel" title="Bloquear painel">⏻</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="eyebrow"><span class="eyedot"></span> LABORATÓRIO PARTICULAR DE ANÁLISE</div>
+        <h1>Engenharia reversa,<br><em>sem complicação.</em></h1>
+        <p>Selecione um programa e o REA trabalha com o Hopper. Você acompanha as etapas e consulta os relatórios aqui mesmo.</p>
+        <div class="hero-points">
+          <span>◈ Análise local</span><span>◈ Relatórios organizados</span><span>◈ Sem enviar código ao GitHub</span>
+        </div>
+      </section>
+
+      <div class="dashboard">
+        <section class="panel start-panel" aria-labelledby="title-start">
+          <div class="panel-top">
+            <div><span class="section-kicker">01 / ANALISAR</span><h2 id="title-start">Nova análise</h2></div>
+            <div class="corner-mark" aria-hidden="true">⌘</div>
+          </div>
+
+          <div class="mode" role="group" aria-label="Tipo de análise">
+            <button id="mode-demo" class="mode-btn selected" type="button" aria-pressed="true">◧ Programa de exemplo</button>
+            <button id="mode-upload" class="mode-btn" type="button" aria-pressed="false">↑ Enviar meu arquivo</button>
+          </div>
+          <div class="example" id="demo-area">
+            <div class="file-visual"><span class="file-icon">C</span>
+              <div><strong>loja_demo</strong><span>Exemplo próprio em C · vendas, descontos e lucro</span></div>
+              <span class="file-check">✓</span>
+            </div>
+            <p>Vamos compilar o programa e verificar a função <code>calcular_total</code> com o Hopper.</p>
+          </div>
+          <div id="upload-area" class="upload-area hidden">
+            <label for="binary-file" class="upload-zone">
+              <span class="upload-icon" aria-hidden="true">↑</span>
+              <strong id="upload-title">Escolher arquivo para analisar</strong>
+              <span>ELF, EXE, DLL, Mach-O e outros arquivos suportados pelo REA</span>
+              <span class="mini">Até 12 MB. O arquivo nunca é executado pelo painel.</span>
+            </label>
+            <input id="binary-file" type="file" aria-describedby="upload-advice">
+            <p id="upload-advice">Use apenas arquivos que você tem autorização para analisar.</p>
+          </div>
+
+          <label for="symbol" class="field-label">Função para inspecionar <span>(opcional)</span></label>
+          <input id="symbol" class="text-field" type="text" maxlength="100" value="calcular_total" placeholder="Ex.: calcular_total" autocomplete="off">
+          <p class="field-note">No exemplo, a função já vem preenchida. Para outros arquivos, pode deixar vazia.</p>
+
+          <button id="btn-analyze" type="button" class="btn-primary"><span aria-hidden="true">◈</span> Iniciar análise <span class="btn-arrow" aria-hidden="true">↗</span></button>
+          <div class="notice"><strong>Privacidade</strong><p>Processamos os arquivos dentro do seu Codespace. Os resultados ficam nas pastas locais <code>targets/</code> e <code>results/</code>, fora dos commits.</p></div>
+        </section>
+
+        <aside class="stack">
+          <section class="panel status-panel" aria-labelledby="title-status">
+            <div class="panel-top"><div><span class="section-kicker">02 / EXECUÇÃO</span><h2 id="title-status">Acompanhamento</h2></div><span id="job-state" class="job-tag">Aguardando</span></div>
+            <ol class="steps" id="job-steps">
+              <li class="step done"><span>01</span><div>Preparação do arquivo<small>Pronto para iniciar</small></div></li>
+              <li class="step"><span>02</span><div>Diagnóstico do Hopper<small>Verifica o ambiente</small></div></li>
+              <li class="step"><span>03</span><div>Análise com o REA<small>Inspeciona o programa</small></div></li>
+              <li class="step"><span>04</span><div>Relatórios<small>Visualização e exportação</small></div></li>
+            </ol>
+            <div id="job-message" role="status" aria-live="polite" class="job-message">Selecione um arquivo para começar.</div>
+          </section>
+
+          <section class="panel results-panel" aria-labelledby="title-results">
+            <div class="panel-top"><div><span class="section-kicker">03 / RESULTADOS</span><h2 id="title-results">Relatórios</h2></div><span class="small-label" id="report-count">0 arquivos</span></div>
+            <div id="report-empty" class="empty"><span aria-hidden="true">⌁</span><strong>Nenhuma análise ainda</strong><p>Os relatórios aparecerão aqui quando o REA terminar.</p></div>
+            <div id="report-view" class="hidden">
+              <label for="report-select" class="field-label">Arquivo de relatório</label>
+              <select id="report-select" class="text-field"></select>
+              <div class="report-actions"><button id="btn-copy" class="btn-secondary" type="button">Copiar</button><button id="btn-download" class="btn-secondary" type="button">Baixar</button><button id="btn-prompt" class="btn-secondary" type="button">Prompt para IA</button></div>
+              <pre id="report-text" tabindex="0" aria-label="Conteúdo do relatório">Selecione um relatório.</pre>
+              <p class="field-note">O prompt para IA é copiado para a área de transferência. Revise os dados antes de compartilhá-los com terceiros.</p>
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      <section class="history panel" aria-labelledby="title-history">
+        <div class="panel-top"><div><span class="section-kicker">ARQUIVO / HISTÓRICO</span><h2 id="title-history">Análises anteriores</h2></div><button id="btn-refresh" class="btn-secondary" type="button">Atualizar ↻</button></div>
+        <div id="history-list" class="history-list"><p class="muted">As análises anteriores aparecerão aqui.</p></div>
+      </section>
+    </main>
+    <footer><span>REA HUB · REA + HOPPER</span><span>Ambiente Codespaces · Uso autorizado</span></footer>
+  </div>
+
+  <div id="login-overlay" class="login-overlay" role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <div class="login-card">
+      <div class="login-symbol">R</div>
+      <div class="eyebrow">ACESSO RESTRITO</div>
+      <h2 id="login-title">Acesse seu laboratório.</h2>
+      <p>Use a <strong>SENHA TEMPORÁRIA</strong> mostrada no terminal quando você iniciou o painel.</p>
+      <form id="login-form">
+        <label class="field-label" for="access-token">Senha temporária</label>
+        <input id="access-token" class="text-field" type="password" required spellcheck="false" autocomplete="off" placeholder="Cole a senha do terminal">
+        <button class="btn-primary" type="submit">Entrar no REA Hub ↗</button>
+        <p id="login-error" class="error-text" role="alert"></p>
+      </form>
+      <small>Não compartilhe a senha nem torne a porta do Codespace pública.</small>
+    </div>
+  </div>
+</body>
+</html>
