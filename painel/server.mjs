@@ -10,7 +10,7 @@ const ROOT = path.resolve(HERE, '..');
 const STATIC = path.join(HERE, 'public');
 const MAX_FILE_BYTES = 12 * 1024 * 1024;
 const MAX_BODY_BYTES = 17 * 1024 * 1024;
-const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-analise', 'erro-funcao']);
+const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnostico', 'erro-analise', 'erro-funcao']);
 const MIME = { '/': 'text/html; charset=utf-8', '/styles.css': 'text/css; charset=utf-8', '/app.js': 'text/javascript; charset=utf-8' };
 const STATIC_PATH = { '/': 'index.html', '/styles.css': 'styles.css', '/app.js': 'app.js' };
 
