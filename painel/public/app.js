@@ -138,7 +138,23 @@ async function loadGeneratedProjects() {
     const parent=$('#generated-projects');
     parent.replaceChildren();
     if (!list.length) return;
-    const head=document.createElement('h3');head.textContent='Projetos já criados';parent.append(head);
+    const top=document.createElement('div');top.className='drafts-heading';
+    const head=document.createElement('h3');head.textContent='Rascunhos de teste ('+list.length+')';
+    const clear=document.createElement('button');clear.type='button';clear.className='btn-secondary draft-delete-all';
+    clear.textContent='Apagar todos os testes';
+    clear.addEventListener('click',async()=>{
+      if(!confirm('Apagar TODOS os rascunhos gerados pelo REA Hub neste Codespace? A exclusão é definitiva. O REA, Hopper, JADX, os APKs e os relatórios de análise serão preservados.'))return;
+      if(!confirm('Confirma a exclusão somente dos projetos gerados? Não poderá desfazer.'))return;
+      clear.disabled=true;
+      try {
+        const result=await api('projects/delete-tests',{method:'POST',data:{confirmation:'APAGAR RASCUNHOS'}});
+        $('#builder-feedback').textContent=result.total+' rascunho(s) apagado(s).'+(result.failed?.length?' Alguns projetos não puderam ser apagados.':'');
+        $('#generated-view').classList.add('hidden');$('#generated-frame').removeAttribute('src');state.generatedProject=null;
+        await loadGeneratedProjects();
+      } catch(error) { $('#builder-feedback').textContent='Falha ao excluir: '+error.message; }
+      finally {clear.disabled=false;}
+    });
+    top.append(head,clear);parent.append(top);
     for (const proj of list) {
       const row=document.createElement('div');row.className='project-row';
       const info=document.createElement('div');
@@ -147,7 +163,22 @@ async function loadGeneratedProjects() {
       info.append(title,details);
       const open=document.createElement('button');open.type='button';open.className='btn-secondary';open.textContent='Abrir';
       open.addEventListener('click',()=>{showGeneratedProject(proj);$('#generated-view').scrollIntoView({behavior:'smooth',block:'center'});});
-      row.append(info,open);parent.append(row);
+      const remove=document.createElement('button');remove.type='button';remove.className='btn-secondary draft-delete';
+      remove.textContent='Apagar';remove.setAttribute('aria-label','Apagar rascunho '+proj.name);
+      remove.addEventListener('click',async()=>{
+        if(!confirm('Apagar definitivamente o rascunho "'+proj.name+'"? Isso não apaga análises nem APKs.'))return;
+        remove.disabled=true;
+        try {
+          await api('projects/'+proj.id+'/delete',{method:'POST',data:{confirmation:'APAGAR RASCUNHO'}});
+          if(state.generatedProject?.id===proj.id){
+            state.generatedProject=null;$('#generated-frame').removeAttribute('src');$('#generated-view').classList.add('hidden');
+          }
+          $('#builder-feedback').textContent='Rascunho apagado: '+proj.name;
+          await loadGeneratedProjects();
+        }catch(error){$('#builder-feedback').textContent='Não foi possível excluir: '+error.message;}
+        finally{remove.disabled=false;}
+      });
+      row.append(info,open,remove);parent.append(row);
     }
   } catch { /* Histórico de projetos opcional */ }
 }
