@@ -10,7 +10,8 @@
   "remoteUser": "vscode",
   "forwardPorts": [
     3000,
-    4173
+    4173,
+    4174
   ],
   "portsAttributes": {
     "3000": {
@@ -20,6 +21,11 @@
     "4173": {
       "label": "TreinoLab (web app de treino)",
       "onAutoForward": "notify"
+    },
+    "4174": {
+      "label": "Prévia privada • aplicativos gerados pelo Copilot",
+      "onAutoForward": "notify",
+      "visibility": "private"
     }
   },
   "postStartCommand": "bash scripts/rea-hub-mobile.sh"
