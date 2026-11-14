@@ -131,3 +131,11 @@ footer{display:flex;justify-content:space-between;gap:20px;padding:35px 0;font-s
   .generated-actions{flex-direction:column}
   .generated-actions>*{width:100%}
 }
+
+/* Limpeza segura dos projetos de teste do gerador */
+.drafts-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:9px 0 11px}
+.drafts-heading h3{margin:0}
+.draft-delete-all{color:#ffb0bb!important;border-color:#884052!important;background:#351f2a!important;min-height:44px;padding:9px 14px}
+.draft-delete{color:#ffb0bb!important;border-color:#884052!important;background:#351f2a!important;min-height:44px}
+.project-row .draft-delete{flex:0 0 auto}
+@media(max-width:580px){.project-row{flex-wrap:wrap}.project-row>div{flex-basis:100%}.project-row button{flex:1 1 85px;min-height:45px}}
