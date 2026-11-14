@@ -66,7 +66,7 @@
               <p id="store-package" class="small muted"></p>
               <p id="store-desc" class="small"></p>
               <p class="small muted">Esta é apenas uma identificação pela página pública, não uma engenharia reversa do aplicativo.</p>
-              <div class="store-action-row"><button type="button" class="btn-secondary" id="store-next">Tenho o APK / ZIP. Analisar arquivo →</button><button type="button" class="btn-primary" id="store-build">Criar meu app a partir dessa referência ↗</button></div>
+              <div class="store-action-row"><button type="button" class="btn-secondary" id="store-next">Tenho o APK / ZIP. Analisar arquivo →</button><button type="button" class="btn-primary" id="store-build">Gerar modelo básico (experimental) ↗</button></div>
             </div>
             <div class="export-guide">
               <strong>Como obter o arquivo pelo próprio celular</strong>
@@ -115,7 +115,7 @@
               <li class="step"><span>03</span><div>Análise com o REA<small>Inspeciona o programa</small></div></li>
               <li class="step"><span>04</span><div>Relatórios<small>Visualização e exportação</small></div></li>
             </ol>
-            <div id="job-message" role="status" aria-live="polite" class="job-message">Selecione um arquivo para começar.</div><button id="btn-go-builder" type="button" class="btn-primary hidden" style="width:100%;margin-top:15px">✦ Criar meu app com esta análise →</button>
+            <div id="job-message" role="status" aria-live="polite" class="job-message">Selecione um arquivo para começar.</div><button id="btn-go-builder" type="button" class="btn-primary hidden" style="width:100%;margin-top:15px">✦ Gerar protótipo básico (experimental) →</button>
           </section>
 
           <section class="panel results-panel" aria-labelledby="title-results">
@@ -130,8 +130,8 @@
             </div>
           </section>
           <section class="panel builder-panel" id="builder-panel" aria-labelledby="builder-title">
-            <div class="panel-top"><div><span class="section-kicker">04 / CONSTRUIR</span><h2 id="builder-title">Criar meu aplicativo</h2></div><span class="builder-icon" aria-hidden="true">✦</span></div>
-            <p class="field-note">Depois de analisar um APK, gere um projeto ORIGINAL, editável e funcional. Também é possível começar com a referência pública, sem afirmar que houve engenharia reversa.</p>
+            <div class="panel-top"><div><span class="section-kicker">04 / CONSTRUIR</span><h2 id="builder-title">Protótipos de teste</h2></div><span class="builder-icon" aria-hidden="true">✦</span></div>
+            <p class="field-note">AVISO: este gerador ainda usa modelos prontos de treino, agenda ou loja. Ele NÃO recria o app analisado nem melhora suas funcionalidades automaticamente. Não use esses protótipos como produto final. Para reconstruir funcionalidades com fidelidade, precisamos de análise real do APK, telas de referência e um agente de programação.</p>
             <div id="builder-source" class="builder-source">Primeiro analise um APK ou identifique o aplicativo pelo link da Play Store.</div>
             <form id="builder-form">
               <label class="field-label" for="builder-name">Nome do seu aplicativo</label>
@@ -147,9 +147,9 @@
               </select>
               <label class="field-label" for="builder-description">O que você quer que o app faça? <span>(opcional)</span></label>
               <textarea id="builder-description" class="text-field builder-description" maxlength="400" rows="3" placeholder="Ex.: montar fichas, registrar cargas e mostrar meu progresso."></textarea>
-              <button id="btn-build-app" type="submit" class="btn-primary" disabled>✦ Criar meu app</button>
+              <button id="btn-build-app" type="submit" class="btn-primary" disabled>✦ Gerar modelo experimental</button>
             </form>
-            <div id="builder-feedback" class="field-note" role="status" aria-live="polite">Aguardando referência ou análise concluída.</div>
+            <div id="builder-feedback" class="field-note" role="status" aria-live="polite">Esta seção gera apenas protótipos genéricos. A análise técnica do APK continua disponível acima.</div>
             <div id="generated-view" class="hidden">
               <div class="generated-success">
                 <span class="generated-check">✓</span>
