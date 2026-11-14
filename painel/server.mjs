@@ -8,7 +8,7 @@ import { pipeline } from 'node:stream/promises';
 import { execFile } from 'node:child_process';
 import { unpackBaseApk } from './apk-bundle.mjs';
 import { lookupPlayStore, normalizePlayLink } from './playstore.mjs';
-import { generateProject, readProject, projectFile, packageProject } from './generator.mjs';
+import { generateProject, readProject, projectFile, packageProject, deleteGeneratedProject, deleteAllGeneratedProjects } from './generator.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -316,6 +316,27 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
           hopper, hopperPath, jadx, running,
           info: 'O painel usa o REA local. Não conecta nem autentica automaticamente agentes externos.'
         });
+      }
+      if (req.method === 'POST' && pathname === '/api/projects/delete-tests') {
+        const body=await readBody(req);
+        if (body?.confirmation !== 'APAGAR RASCUNHOS') {
+          return json(res,400,{error:'Confirme a exclusão dos rascunhos gerados.'});
+        }
+        const result=await deleteAllGeneratedProjects(generatedDir);
+        return json(res,result.failed.length?207:200,{...result,total:result.deleted.length});
+      }
+      const deleteProject=pathname.match(/^\/api\/projects\/([a-f0-9-]{36})\/delete$/);
+      if (req.method === 'POST' && deleteProject) {
+        const body=await readBody(req);
+        if (body?.confirmation !== 'APAGAR RASCUNHO') {
+          return json(res,400,{error:'Confirmação inválida.'});
+        }
+        try {
+          const deleted=await deleteGeneratedProject(generatedDir,deleteProject[1]);
+          return json(res,200,{...deleted});
+        } catch(error) {
+          return json(res,error.code==='ENOENT'?404:400,{error:cleanString(error.message,300)});
+        }
       }
       if (req.method === 'GET' && pathname === '/api/projects') {
         await fs.mkdir(generatedDir,{recursive:true});
