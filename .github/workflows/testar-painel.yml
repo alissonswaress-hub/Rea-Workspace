@@ -1,0 +1,27 @@
+name: Validar REA Hub
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "painel/**"
+      - "package.json"
+      - ".github/workflows/testar-painel.yml"
+
+jobs:
+  testar-painel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Conferir sintaxe do servidor
+        run: |
+          node --check painel/server.mjs
+          node --check painel/public/app.js
+          node --check painel/server.test.mjs
+      - name: Testar autenticacao e fluxo de analise
+        run: npm test
