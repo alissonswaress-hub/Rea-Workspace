@@ -137,7 +137,7 @@ async function loadGeneratedProjects() {
     const list=(await api('projects')).projects || [];
     const parent=$('#generated-projects');
     parent.replaceChildren();
-    if (!list.length) return;
+    if (!list.length) {const text=document.createElement('p');text.className='field-note';text.textContent='Nenhum rascunho antigo. O laboratório está limpo.';parent.append(text);return;}
     const top=document.createElement('div');top.className='drafts-heading';
     const head=document.createElement('h3');head.textContent='Rascunhos de teste ('+list.length+')';
     const clear=document.createElement('button');clear.type='button';clear.className='btn-secondary draft-delete-all';
@@ -582,8 +582,8 @@ $('#copilot-source').addEventListener('change',copilotSourceNote);
 $('#copilot-copy').addEventListener('click',copyCopilotTask);
 $('#copilot-cli-check').addEventListener('click',checkCopilotCli);
 $('#copilot-run').addEventListener('click',runCopilotCli);
-$('#store-build').addEventListener('click',()=>{setBuilderSource('public');$('#builder-panel').scrollIntoView({behavior:'smooth',block:'start'});});
-$('#btn-go-builder').addEventListener('click',()=>{setBuilderSource('analysis');$('#builder-panel').scrollIntoView({behavior:'smooth',block:'start'});});
+$('#store-build').addEventListener('click',()=>{$('#copilot-source').value='public';copilotSourceNote();$('#copilot-panel').scrollIntoView({behavior:'smooth',block:'start'});});
+$('#btn-go-builder').addEventListener('click',()=>{$('#copilot-source').value='analysis';copilotSourceNote();$('#copilot-panel').scrollIntoView({behavior:'smooth',block:'start'});});
 $('#builder-form').addEventListener('submit',buildProject);
 $('#generated-download').addEventListener('click',()=>{if(state.generatedProject)void downloadGenerated(state.generatedProject.id);});
 $('#btn-setup-android').addEventListener('click', prepareAndroid);
