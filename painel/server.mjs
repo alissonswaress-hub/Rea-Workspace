@@ -7,6 +7,7 @@ import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { execFile } from 'node:child_process';
 import { unpackBaseApk } from './apk-bundle.mjs';
+import { lookupPlayStore } from './playstore.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -72,7 +73,7 @@ function runProcess(command, args, { cwd = ROOT, env = process.env, timeout = 30
   });
 }
 
-export function createApp({ secret = randomBytes(20).toString('hex'), root = ROOT, runner = runProcess } = {}) {
+export function createApp({ secret = randomBytes(20).toString('hex'), root = ROOT, runner = runProcess, storeLookup = lookupPlayStore } = {}) {
   const uploadsDir = path.join(root, 'targets', 'painel');
   const reportsDir = path.join(root, 'results', 'painel');
   const hopperPath = process.env.HOPPER_LAUNCHER_PATH || '/opt/hopper/bin/Hopper';
@@ -255,6 +256,15 @@ export function createApp({ secret = randomBytes(20).toString('hex'), root = ROO
       if (req.method === 'GET' && pathname === '/api/jobs') {
         const list = [...jobs.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 40);
         return json(res, 200, { jobs: list });
+      }
+      if (req.method === 'POST' && pathname === '/api/playstore') {
+        const body = await readBody(req);
+        if (typeof body?.url !== 'string') return json(res, 400, { error: 'Informe o link da Play Store.' });
+        try {
+          return json(res, 200, await storeLookup(body.url));
+        } catch (error) {
+          return json(res, 400, { error: cleanString(error.message, 280) });
+        }
       }
       if (req.method === 'POST' && pathname === '/api/android-upload') {
         if (running) return json(res, 409, { error: 'Já existe uma análise em andamento.' });
