@@ -48,7 +48,12 @@ export async function runCopilotMission({missionsDir,id,runner,timeout=720000}){
   const result=await runner('copilot',args,{cwd:output,timeout,env:process.env});
   if(!result.ok){
     const message=String(result.stderr||result.stdout||'').slice(-900);
-    throw Error('Copilot CLI não concluiu a criação. Verifique a autenticação com copilot login e os créditos disponíveis. '+message);
+    if(/Access denied by policy settings|Copilot CLI policy setting may be preventing access/i.test(message)) {
+      const err=new Error('Acesso ao Copilot CLI negado pela política do GitHub. Verifique sua assinatura e as permissões do Copilot CLI em https://github.com/settings/copilot. Se o acesso for por uma organização, o administrador precisa autorizar. Enquanto isso, use o Copilot Agent no Codespace.');
+      err.code='COPILOT_POLICY_DENIED';
+      throw err;
+    }
+    throw Error('O Copilot CLI não conseguiu concluir. Consulte as informações da conta e o relatório da execução. '+message);
   }
   for(const file of ['index.html','styles.css','app.js']){
     const filePath=path.join(output,file);
