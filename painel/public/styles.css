@@ -68,3 +68,5 @@ footer{display:flex;justify-content:space-between;gap:20px;padding:35px 0;font-s
 .error-text{color:var(--red);min-height:15px;font-size:12px;line-height:1.5}
 @media(max-width:800px){.shell{padding:0 17px}.topbar{min-height:74px}.logo{font-size:18px}.logo-mark{width:37px;height:37px}.hero{padding:45px 0 35px}.hero>p{font-size:14px}.dashboard{grid-template-columns:1fr}.panel{padding:21px}.hero-points{gap:14px;font-size:11px}}
 @media(max-width:440px){.pill{font-size:10px;padding:7px}.top-controls{gap:5px}.pill .dot{margin-right:3px}.logo{gap:7px}.logo small{font-size:8px}.icon-btn{width:34px;height:34px}.hero-points{display:grid;gap:8px}.mode{gap:3px}.mode-btn{font-size:12px;padding:11px 5px}.report-actions{flex-wrap:wrap}.report-actions .btn-secondary{min-width:28%}footer{flex-direction:column;gap:8px}}
+
+@media(max-width:600px){.mode{flex-wrap:wrap}.mode-btn{flex:1 1 130px}.top-controls{flex-wrap:wrap;justify-content:end}.pill{font-size:10px}}
