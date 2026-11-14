@@ -6,6 +6,8 @@ on:
     paths:
       - "painel/**"
       - "package.json"
+      - "scripts/preparar-rea-android.sh"
+      - "scripts/analisar-android.sh"
       - ".github/workflows/testar-painel.yml"
 
 jobs:
@@ -23,5 +25,7 @@ jobs:
           node --check painel/server.mjs
           node --check painel/public/app.js
           node --check painel/server.test.mjs
+      - name: Validar scripts Android
+        run: bash -n scripts/preparar-rea-android.sh scripts/analisar-android.sh
       - name: Testar autenticacao e fluxo de analise
         run: npm test
