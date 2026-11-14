@@ -13,7 +13,7 @@ const STATIC = path.join(HERE, 'public');
 const MAX_FILE_BYTES = 12 * 1024 * 1024;
 const MAX_BODY_BYTES = 17 * 1024 * 1024;
 const MAX_APK_BYTES = 160 * 1024 * 1024;
-const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnostico', 'erro-analise', 'erro-funcao', 'android-pacote', 'android-classes', 'erro-android-diagnostico', 'erro-android-pacote', 'erro-android-classes']);
+const REPORT_NAMES = new Set(['diagnostico', 'analise', 'funcao', 'erro-diagnostico', 'erro-analise', 'erro-funcao', 'android-diagnostico', 'android-pacote', 'android-classes', 'erro-android-diagnostico', 'erro-android-pacote', 'erro-android-classes']);
 const MIME = { '/': 'text/html; charset=utf-8', '/styles.css': 'text/css; charset=utf-8', '/app.js': 'text/javascript; charset=utf-8' };
 const STATIC_PATH = { '/': 'index.html', '/styles.css': 'styles.css', '/app.js': 'app.js' };
 
