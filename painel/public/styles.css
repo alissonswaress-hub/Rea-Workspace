@@ -88,3 +88,17 @@ footer{display:flex;justify-content:space-between;gap:20px;padding:35px 0;font-s
 .export-guide small{display:block;color:#9e9caf;font-size:11px;line-height:1.5;margin-top:11px}
 .setup-button{display:block;min-width:185px;max-width:100%;margin:12px 0}
 #setup-status{display:block}
+
+/* Acesso simplificado pelo celular */
+.mobile-quickstart{display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(115deg,#1b2231,#20192d);border:1px solid #554476;border-radius:15px;padding:17px 19px;margin-bottom:23px}
+.mobile-quickstart strong{font-size:14px;color:#e8ddff}
+.mobile-quickstart p{font-size:12px;line-height:1.5;color:#b8b4ce;margin:7px 0 0}
+.mobile-quickstart button{flex:0 0 auto;min-height:45px}
+.remember-phone{display:flex;align-items:center;gap:8px;font-size:12px;color:#dbd3ec;margin:12px 0 18px;line-height:1.45;cursor:pointer}
+.remember-phone input{accent-color:#a58cff;width:18px;height:18px;flex:0 0 auto}
+@media(max-width:650px){
+  .mobile-quickstart{display:block;padding:16px;margin-bottom:15px}
+  .mobile-quickstart button{width:100%;margin-top:13px}
+  #btn-mobile-help{min-width:38px}
+  .hero{padding:30px 0 25px}
+}
