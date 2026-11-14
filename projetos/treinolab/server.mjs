@@ -11,6 +11,7 @@ const routes = new Map([
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/manifest.webmanifest', ['manifest.webmanifest', 'application/manifest+json; charset=utf-8']],
   ['/sw.js', ['sw.js', 'text/javascript; charset=utf-8']],
+  ['/icon.svg', ['icon.svg', 'image/svg+xml']],
 ]);
 export function createTreinoServer() {
   return http.createServer(async(req,res)=>{
