@@ -4,7 +4,7 @@ import { once } from 'node:events';
 import os from 'node:os';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
-import { createApp } from './server.mjs';
+import { createApp, getPersistentSecret } from './server.mjs';
 
 test('Painel REA: acesso protegido, exemplo e upload analisados sem executar upload', async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rea-hub-test-'));
@@ -124,4 +124,39 @@ test('Painel REA: acesso protegido, exemplo e upload analisados sem executar upl
   const analysisCalls = calls.filter(item => item.command === 'rea' && item.args[0] === 'analyze');
   assert.equal(analysisCalls.length, 2);
   assert.ok(analysisCalls.every(item => item.args.includes('--provider') && item.args.includes('hopper')));
+});
+
+
+test('A senha privada permanece igual entre reinicios sem entrar no Git', async t => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'rea-hub-secret-'));
+  const file = path.join(dir, 'secret');
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const first = await getPersistentSecret(file);
+  assert.match(first, /^[a-f0-9]{64}$/);
+  assert.equal(await getPersistentSecret(file), first);
+  assert.equal((await fs.stat(file)).mode & 0o777, 0o600);
+});
+
+test('Interface de celular oferece manifesto, icone e recuperacao offline sem expor APIs', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rea-hub-pwa-'));
+  const app = createApp({ secret: 'safe-test-key', root, runner: async () => ({ ok: true, stdout: 'rea 6.9.0', stderr: '' }) });
+  await app.ready;
+  app.server.listen(0, '127.0.0.1');
+  await once(app.server, 'listening');
+  t.after(async () => {
+    await new Promise(resolve => app.server.close(resolve));
+    await fs.rm(root, { recursive: true, force: true });
+  });
+  const base = 'http://127.0.0.1:' + app.server.address().port;
+  for (const filename of ['manifest.webmanifest', 'icon.svg', 'sw.js', 'offline.html']) {
+    const response = await fetch(base + '/' + filename);
+    assert.equal(response.status, 200, filename);
+    assert.ok((await response.text()).length > 30);
+  }
+  const manifest = await (await fetch(base + '/manifest.webmanifest')).json();
+  assert.equal(manifest.display, 'standalone');
+  const unauthorized = await fetch(base + '/api/health');
+  assert.equal(unauthorized.status, 401);
+  const sw = await (await fetch(base + '/sw.js')).text();
+  assert.match(sw, /startsWith\('\/api\/'\)/);
 });
