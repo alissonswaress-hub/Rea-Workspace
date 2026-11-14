@@ -152,7 +152,22 @@
               <div class="copilot-task-path" id="copilot-task-path"></div>
               <div class="field-label">Mensagem pronta para o Copilot</div>
               <textarea id="copilot-prompt" class="text-field builder-description copilot-prompt" readonly rows="5"></textarea>
-              <div class="generated-actions"><button type="button" id="copilot-copy" class="btn-primary">Copiar e levar ao Copilot</button><a href="https://github.com/codespaces" class="btn-secondary" target="_blank" rel="noopener noreferrer">Abrir meu Codespace</a></div>
+              <div class="copilot-cli-box">
+                <strong>⚡ Gerar aplicativo automaticamente pela IA</strong>
+                <p class="field-note">Se instalar e autenticar o Copilot CLI uma vez no Codespace, poderá iniciar a programação pelo celular. O agente editará somente uma pasta isolada e NÃO poderá executar comandos shell.</p>
+                <div class="builder-source" id="copilot-cli-status">Verificando Copilot CLI...</div>
+                <div class="copilot-cli-commands" id="copilot-cli-guide">
+                  <span class="field-label">Ativação única no terminal do Codespace</span>
+                  <code>npm install -g @github/copilot && copilot login</code>
+                  <p class="field-note">Faça login pelo site indicado na tela do terminal. O Copilot Chat do VS Code e o CLI podem exigir autenticações separadas.</p>
+                </div>
+                <button type="button" id="copilot-cli-check" class="btn-secondary">↻ Verificar conexão do Copilot</button>
+                <button type="button" id="copilot-run" class="btn-primary" disabled>✦ IA: construir aplicativo agora</button>
+                <p id="copilot-run-feedback" class="field-note" role="status" aria-live="polite"></p>
+                <a id="copilot-built-preview" class="btn-primary hidden" target="_blank" rel="noopener noreferrer">↗ Abrir aplicativo criado pela IA</a>
+                <p id="copilot-preview-note" class="field-note hidden">A prévia é aberta numa porta SEPARADA (4174), que deve permanecer PRIVADA no Codespace.</p>
+              </div>
+              <div class="generated-actions"><button type="button" id="copilot-copy" class="btn-secondary">Copiar tarefa para Copilot Agent no notebook</button><a href="https://github.com/codespaces" class="btn-secondary" target="_blank" rel="noopener noreferrer">Abrir meu Codespace</a></div>
               <p class="field-note"><b>No notebook:</b> abra o Chat do Copilot à direita, selecione <b>Agent</b> ou <b>reconstrutor-rea</b>, cole a mensagem e envie. Revise/aprove as alterações e os testes propostos. A IA só terá acesso ao resumo preparado quando você decidir usar a missão.</p>
               <p class="field-note">Se tiver apenas um link da Play Store, o Copilot não conhece o código ou todas as telas do aplicativo. Envie prints e defina os fluxos importantes para melhorar a fidelidade funcional.</p>
             </div>
